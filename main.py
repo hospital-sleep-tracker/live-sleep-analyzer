@@ -3,9 +3,8 @@ TEENSY_VENDOR_ID = 0x16c0
 TEENSY_PRODUCT_ID = 0x0483
 DISPLAY_GRAPH = False
 
-import re, time, sys, glob
+import re, time, sys, glob, os, csv, datetime
 import logging as log
-import pdb
 
 import serial, usb, numpy
 from matplotlib import pyplot, animation
@@ -25,22 +24,48 @@ def main():
             graph = Graph()
             continue
 
-    teensy = None
+    # Check user is in the right directory
+    if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):
+        log.error("Please cd into the script directory before running it!")
+        sys.exit(1)
+
+    # Create logs directory
+    try:
+        os.listdir('logs')
+    except OSError:
+        try:
+            os.mkdir('logs')
+        except OSError:
+            log.error("Can't create logs directory")
+
     while True:
         try:
             # Keep Searching / initializing USB reader until we find it
+            teensy = None
             while teensy == None:
                 teensy = get_teensy_usb()
 
-            # Prepare log output
-            # timestamp = 'currenttime'
-            # file_open(timestamp)
+            logfile = open('logs/%s.slp.csv' % datetime.datetime.now().strftime("%m%d%Y_%H%M%S"), 'a')
+            try:
+                logwriter = csv.writer(logfile)
+                logwriter.writerow(['Date', 'Time', 'Reading Index', 'Movement Value'])
 
-            # Read the data
-            while teensy.isOpen():
-                movement_value = get_movement_value(teensy)
-                if graph:
-                    graph.add(movement_value)
+                index = -1
+                while teensy.isOpen():
+                    index = index + 1
+                    # Read value from accelerometer
+                    movement_value = get_movement_value(teensy)
+
+                    # Get a timestamp for the reading
+                    timestamp = datetime.datetime.now()
+                    date, time = str(timestamp).split(' ')
+
+                    if graph:
+                        graph.add(movement_value)
+                    if logfile:
+                        logwriter.writerow([date, time, index, movement_value])
+            except:
+                logfile.close()
         except:
             teensy = None
 
@@ -124,7 +149,6 @@ def get_teensy_usb():
     #         test_line = serial_device.readline()
     #         if test_line == '':
     #             raise OSError
-    #         pdb.set_trace()
     #         serial_device.close()
     #         ready_usb_devices.append(serial_device)
     #     except (OSError, serial.SerialException):

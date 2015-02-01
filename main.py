@@ -13,21 +13,22 @@ from matplotlib import pyplot, animation
 log.basicConfig(level=log.DEBUG, format='%(asctime)s [%(levelname)s]: %(message)s')
 
 def main():
+    graph = None
+
     # Parse command line arguments
     sys.argv.pop(0)
     for arg in sys.argv:
-        if arg == '--display':
-            global DISPLAY_GRAPH
-            DISPLAY_GRAPH = True
+        if arg == '--help':
+            print 'usage: python ./main.py [--graph]'
+            return
+        if arg == '--graph':
+            graph = Graph()
+            continue
 
-    if DISPLAY_GRAPH:
-        display_init()
-
-    # Main loop
     teensy = None
     while True:
         try:
-            # Initialize USB reader
+            # Keep Searching / initializing USB reader until we find it
             while teensy == None:
                 teensy = get_teensy_usb()
 
@@ -35,43 +36,29 @@ def main():
             # timestamp = 'currenttime'
             # file_open(timestamp)
 
-            buffer = [100, 120, 140]
             # Read the data
-            if teensy.isOpen():
-                fig = pyplot.figure()
-                ax = pyplot.axes(xlim=(0, 100), ylim=(0, 200))
-                line, = ax.plot([], [], lw=2)
-                i = 1
-                buffer = [100,120,140];
-                # set up animate function
-                def animate(i):
-                    output=str(teensy.read(4))
-                    outputre=re.split("\W+",output)
-                    buffer.append(outputre[1])
-                    x = numpy.linspace(0,100,len(buffer))
-                   # y = int(outputre[1])
-                    y = buffer
-                    line.set_data(x, y)
-                    #print (outputre[1])
-                    #print (buffer)
-                    return line,
-                def init_graph():
-                    line.set_data([], [])
-                    return line,
-                pdb.set_trace()
-                anim = animation.FuncAnimation(fig, animate, init_func=init_graph,
-                               frames=100, interval=20, blit=False)
-                pyplot.show()
-
-
+            while teensy.isOpen():
+                movement_value = get_movement_value(teensy)
+                if graph:
+                    graph.add(movement_value)
         except:
             teensy = None
 
+class Graph(object):
+    def __init__(self):
+        pyplot.ion()
+        self.data = [0] * 50
+        self.ax = pyplot.axes(xlim=(0, 50), ylim=(0, 200))
+        self.line, = self.ax.plot(self.data, lw=2)
 
-def clean_graph():
-    line.set_data([], [])
-    return line,
+    def add(self, movement_value):
+        self.data.append(movement_value)
+        del self.data[0]
+        self.line.set_data(range(0,50), self.data)
+        pyplot.draw()
 
+def get_movement_value(teensy):
+    return int(teensy.readline().rstrip())
 
 def get_teensy_usb():
     """Searches, opens, and returns a serial port object connected to the teensy
@@ -102,7 +89,16 @@ def get_teensy_usb():
 
     ready_usb_devices = []
 
-    # Method 1: Match via vendor USB info
+    # Method 1: Match via ready-to-read serial ports
+    for port in ports:
+        try:
+            teensy = serial.Serial(port=port, timeout=1)
+            if teensy.read(4) != '':
+                return teensy
+        except (OSError, serial.SerialException):
+            pass
+
+    # Method 2: Match via vendor USB info
     # device = None
     # while dev == None:
     #     time.sleep(1)
@@ -135,20 +131,5 @@ def get_teensy_usb():
     #         log.debug("Port %s unavailable")
     #         pass
 
-    # Method 2: Match via ready-to-read serial ports
-    for port in ports:
-        try:
-            teensy = serial.Serial(port=port, timeout=1)
-            if teensy.read(4) != '':
-                return teensy
-        except (OSError, serial.SerialException):
-            pass
-
-
-def read_from_usb(dev):
-    outputre = re.split("\W+",output)
-    print(output)
-    print (outputre[1])
-    time.sleep(1)
-
-main()
+if __name__ == "__main__":
+    main()

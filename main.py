@@ -33,7 +33,7 @@ def main():
         log.error("Please cd into the script directory before running it!")
         sys.exit(1)
 
-    # Create logs directory
+    # Create logs directory.
     try:
         os.listdir('logs')
     except OSError:
@@ -50,11 +50,21 @@ def main():
             while teensy == None:
                 teensy = get_teensy_usb()
 
-            logfile = open('logs/%s.slp.csv' % datetime.datetime.now().strftime("%m%d%Y_%H%M%S"), 'a')
+            # Open logfile
             try:
+                # Open logfile, create csv writer
+                logfile_name = 'logs/%s.slp.csv' % datetime.datetime.now().strftime("%m%d%Y_%H%M%S")
+                log.info("Logging to %s" % logfile_name)
+                logfile = open(logfile_name, 'a')
                 logwriter = csv.writer(logfile)
-                logwriter.writerow(['Date', 'Time', 'Reading Index', 'Movement Value'])
 
+                # Write CSV header information
+                logwriter.writerow(['Date', 'Time', 'Reading Index', 'Movement Value'])
+            except:
+                log.error("Unable to open logfile. Quitting")
+                sys.exit(1)
+
+            try:
                 index = -1
                 while teensy.isOpen():
                     index = index + 1
@@ -69,9 +79,18 @@ def main():
                         graph.add(movement_value)
                     if logfile:
                         logwriter.writerow([date, time, index, movement_value])
-            except:
+            except KeyboardInterrupt:
+                log.info("Interrupt detected. Closing logfile and quitting")
                 logfile.close()
-        except:
+                sys.exit(0)
+            except serial.SerialException:
+                log.info("USB Disconnected. Closing logfile")
+                logfile.close()
+        except KeyboardInterrupt:
+            log.info("Interrupt detected. Quitting")
+            sys.exit(0)
+        except Exception as e:
+            log.error("Encountered unexpected exception: %s" % e)
             teensy = None
 
 class Graph(object):

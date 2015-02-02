@@ -57,6 +57,8 @@ def main():
                 log.info("Logging to %s" % logfile_name)
                 logfile = open(logfile_name, 'a')
                 logwriter = csv.writer(logfile)
+                turn_on_led()
+
 
                 # Write CSV header information
                 logwriter.writerow(['Date', 'Time', 'Reading Index', 'Movement Value'])
@@ -82,9 +84,11 @@ def main():
             except KeyboardInterrupt:
                 log.info("Interrupt detected. Closing logfile and quitting")
                 logfile.close()
+                turn_off_led()
                 sys.exit(0)
             except serial.SerialException:
                 log.info("USB Disconnected. Closing logfile")
+                turn_off_led()
                 logfile.close()
         except KeyboardInterrupt:
             log.info("Interrupt detected. Quitting")
@@ -93,6 +97,19 @@ def main():
             log.error("Encountered unexpected exception: %s" % e)
             teensy = None
 
+def turn_on_led():
+    try:
+        with open('/sys/class/leds/ACT/brightness', 'w') as f:
+            f.write('1')
+    except:
+        log.error("Couldn't change indicator led")
+
+def turn_off_led():
+    try:
+        with open('/sys/class/leds/ACT/brightness', 'w') as f:
+            f.write('0')
+    except:
+        log.error("Couldn't change indicator led")
 class Graph(object):
     def __init__(self):
         pyplot.ion()

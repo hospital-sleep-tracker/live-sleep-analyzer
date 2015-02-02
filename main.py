@@ -6,10 +6,9 @@ DISPLAY_GRAPH = False
 import re, time, sys, glob, os, csv, datetime
 import logging as log
 
-import serial, usb, numpy
-from matplotlib import pyplot, animation
+import serial, usb
 
-log.basicConfig(level=log.DEBUG, format='%(asctime)s [%(levelname)s]: %(message)s')
+log.basicConfig(level=log.INFO, format='%(asctime)s [%(levelname)s]: %(message)s')
 
 def main():
     graph = None
@@ -21,6 +20,11 @@ def main():
             print 'usage: python ./main.py [--graph]'
             return
         if arg == '--graph':
+            # Import graphing libraries. This is kind of bad practice,
+            # but saves some processing time on the pi
+            import numpy
+            from matplotlib import pyplot, animation
+
             graph = Graph()
             continue
 
@@ -37,6 +41,7 @@ def main():
             os.mkdir('logs')
         except OSError:
             log.error("Can't create logs directory")
+            sys.exit(1)
 
     while True:
         try:
@@ -83,7 +88,9 @@ class Graph(object):
         pyplot.draw()
 
 def get_movement_value(teensy):
-    return int(teensy.readline().rstrip())
+    movement_value = int(teensy.readline().rstrip())
+    log.info("Read movement value: %d" % movement_value)
+    return movement_value
 
 def get_teensy_usb():
     """Searches, opens, and returns a serial port object connected to the teensy
@@ -91,7 +98,7 @@ def get_teensy_usb():
     :raises EnvironmentError:
         On unsupported or unknown platforms
     :returns:
-        A list of available serial ports
+        An initialized serial object (hopefully) connected to the teensy
     """
     if sys.platform.startswith('win'):
         log.debug("Using windows system.")
@@ -110,15 +117,17 @@ def get_teensy_usb():
         log.error("Unsupported / uncrecognized platform")
         raise EnvironmentError('Unsupported platform')
 
-    log.debug("Available ports: %s" % ports)
-
-    ready_usb_devices = []
+    for port in ports:
+        log.debug("Found available port: %s" % port)
 
     # Method 1: Match via ready-to-read serial ports
+    ready_usb_devices = []
     for port in ports:
+        log.info("Checking: %s" % port)
         try:
             teensy = serial.Serial(port=port, timeout=1)
             if teensy.read(4) != '':
+                log.info("Using %s" % port)
                 return teensy
         except (OSError, serial.SerialException):
             pass

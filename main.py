@@ -16,10 +16,10 @@ def main():
     # Parse command line arguments
     sys.argv.pop(0)
     for arg in sys.argv:
-        if arg == '--help':
-            print 'usage: python ./main.py [--graph]'
+        if arg == '--help' or arg == '-h':
+            print 'usage: python ./main.py [-g|--graph]'
             return
-        if arg == '--graph':
+        if arg == '--graph' or arg == '-g':
             # Import graphing libraries. This is kind of bad practice,
             # but saves some processing time on the pi
             import numpy
@@ -101,15 +101,16 @@ def turn_on_led():
     try:
         with open('/sys/class/leds/ACT/brightness', 'w') as f:
             f.write('1')
-    except:
+    except IOError:
         log.error("Couldn't change indicator led")
 
 def turn_off_led():
     try:
         with open('/sys/class/leds/ACT/brightness', 'w') as f:
             f.write('0')
-    except:
+    except IOError:
         log.error("Couldn't change indicator led")
+
 class Graph(object):
     def __init__(self):
         pyplot.ion()

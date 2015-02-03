@@ -3,7 +3,7 @@ TEENSY_VENDOR_ID = 0x16c0
 TEENSY_PRODUCT_ID = 0x0483
 DISPLAY_GRAPH = False
 
-import re, time, sys, glob, os, csv, datetime
+import re, time, sys, glob, os, csv, datetime, argparse
 import logging as log
 
 import serial, usb
@@ -14,24 +14,25 @@ def main():
     graph = None
 
     # Parse command line arguments
-    sys.argv.pop(0)
-    for arg in sys.argv:
-        if arg == '--help' or arg == '-h':
-            print 'usage: python ./main.py [-g|--graph]'
-            return
-        if arg == '--graph' or arg == '-g':
-            # Import graphing libraries. This is kind of bad practice,
-            # but saves some processing time on the pi
-            import numpy
-            from matplotlib import pyplot, animation
-
-            graph = Graph()
-            continue
+    parser = argparse.ArgumentParser(prog='Hospital Sleep Tracker',
+                                     description='Logs and analyzes realtime accelerometer input.')
+    parser.add_argument('-g', '--graph', action='store_true', help='display live data via graphing tools')
+    parser.add_argument('-f', '--file', dest='filename',
+                        help='specify an input csv file instead of using live data')
+    args = parser.parse_args()
 
     # Check user is in the right directory
     if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):
         log.error("Please cd into the script directory before running it!")
         sys.exit(1)
+
+    # This is very 'unpythonic', but loading these libraries takes forever on the pi,
+    # so we do it conditionally here
+    if args.graph:
+        global numpy, pyplot, animation
+        import numpy
+        from matplotlib import pyplot, animation
+        graph = Graph()
 
     # Create logs directory.
     try:

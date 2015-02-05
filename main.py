@@ -27,7 +27,7 @@ def main():
         sys.exit(1)
 
     # This is very 'unpythonic', but loading these libraries takes forever on the pi,
-    # so we do it conditionally here
+    # so we do it conditionally here so they're only loaded if they're needed.
     if args.graph:
         global numpy, pyplot, animation
         import numpy
@@ -51,9 +51,8 @@ def main():
             while teensy == None:
                 teensy = get_teensy_usb()
 
-            # Open logfile
+            # Open logfile for this session
             try:
-                # Open logfile, create csv writer
                 logfile_name = 'logs/%s.slp.csv' % datetime.datetime.now().strftime("%m%d%Y_%H%M%S")
                 log.info("Logging to %s" % logfile_name)
                 logfile = open(logfile_name, 'a')
@@ -70,27 +69,33 @@ def main():
             try:
                 index = -1
                 while teensy.isOpen():
-                    index = index + 1
+                    index += 1
                     # Read value from accelerometer
                     movement_value = get_movement_value(teensy)
+                    if movement_value is None:
+                        # Got bad value from reader. Move on. Note: Index will still be incremented
+                        turn_off_led()
+                        continue
 
-                    # Get a timestamp for the reading
+                    # Get a timestamp of this reading
+                    turn_on_led()
                     timestamp = datetime.datetime.now()
                     date, time = str(timestamp).split(' ')
 
                     if graph:
                         graph.add(movement_value)
                     if logfile:
-                        logwriter.writerow([date, time, index, movement_value])
+                        logwriter.writerow([index, date, time, movement_value])
             except KeyboardInterrupt:
                 log.info("Interrupt detected. Closing logfile and quitting")
                 logfile.close()
                 turn_off_led()
                 sys.exit(0)
             except serial.SerialException:
-                log.info("USB Disconnected. Closing logfile")
+                log.info("USB Error. Closing everything")
                 turn_off_led()
                 logfile.close()
+                teensy.close()
         except KeyboardInterrupt:
             log.info("Interrupt detected. Quitting")
             sys.exit(0)
@@ -103,14 +108,14 @@ def turn_on_led():
         with open('/sys/class/leds/ACT/brightness', 'w') as f:
             f.write('1')
     except IOError:
-        log.error("Couldn't change indicator led")
+        log.warning("Unable to change indicator led")
 
 def turn_off_led():
     try:
         with open('/sys/class/leds/ACT/brightness', 'w') as f:
             f.write('0')
     except IOError:
-        log.error("Couldn't change indicator led")
+        log.warning("Unable to change indicator led")
 
 class Graph(object):
     def __init__(self):
@@ -126,9 +131,23 @@ class Graph(object):
         pyplot.draw()
 
 def get_movement_value(teensy):
-    movement_value = int(teensy.readline().rstrip())
-    log.info("Read movement value: %d" % movement_value)
-    return movement_value
+    """Gets new data from the provided teensy object (via readline)
+    and converts it into an integer.
+
+    :returns:
+        Integer value representing movement as determined by teensy, or None
+    """
+    raw_value = teensy.readline().rstrip()
+    if raw_value == '':
+        log.warning("Teensy returned empty string. Ignoring")
+        return
+    else:
+        try:
+            movement_value = int(raw_value)
+            log.info("Read movement value: %d" % movement_value)
+            return movement_value
+        except:
+            log.warning("(Ignoring) Couldn't convert following value to integer: %s" % raw_value)
 
 def get_teensy_usb():
     """Searches, opens, and returns a serial port object connected to the teensy

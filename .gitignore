@@ -1,3 +1,4 @@
 *.pyc
 logs/*.slp.csv
 logs/*.log
+*.DS_STORE

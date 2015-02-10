@@ -1,108 +1,27 @@
-DEBUG_ON = True
-TEENSY_VENDOR_ID = 0x16c0
-TEENSY_PRODUCT_ID = 0x0483
-DISPLAY_GRAPH = False
-
+"""
+Shared library of classes for sleep logging, analyzing, and graphing
+"""
 import re, time, sys, glob, os, csv, datetime, argparse
 import logging as log
 
 import serial, usb
 
+import numpy
+from matplotlib import pyplot, animation
+
 log.basicConfig(level=log.INFO, format='%(asctime)s [%(levelname)s]: %(message)s')
-
-def main():
-    graph = None
-
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(prog='Hospital Sleep Tracker',
-                                     description='Logs and analyzes realtime accelerometer input.')
-    parser.add_argument('-g', '--graph', action='store_true', help='display live data via graphing tools')
-    parser.add_argument('-f', '--file', dest='filename',
-                        help='specify an input csv file instead of using live data')
-    args = parser.parse_args()
-
-    # Check user is in the right directory
-    if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):
-        log.error("Please cd into the script directory before running it!")
-        sys.exit(1)
-
-    # This is very 'unpythonic', but loading these libraries takes forever on the pi,
-    # so we do it conditionally here so they're only loaded if they're needed.
-    if args.graph:
-        global numpy, pyplot, animation
-        import numpy
-        from matplotlib import pyplot, animation
-        graph = LazyGraph()
-
-    # Create logs directory.
-    try:
-        os.listdir('logs')
-    except OSError:
-        try:
-            os.mkdir('logs')
-        except OSError:
-            log.error("Can't create logs directory")
-            sys.exit(1)
-
-    try:
-        # We must initialize
-        if args.filename:
-            sleep_reader = InFile(args.filename)
-            indicator_led = DummyLightSwitch()
-            logfile = DummyLogFile()
-        else:
-            sleep_reader = Teensy()
-            indicator_led = LightSwitch()
-            logfile = OutFile()
-            indicator_led.turn_on()
-
-        analyzer = Analyzer()
-
-        try:
-            while sleep_reader.is_ready():
-                # Read value from accelerometer
-                movement_value = sleep_reader.get_next_movement_value()
-                if movement_value is None:
-                    # Got bad value from reader. Move on. Note: Index will still be incremented
-                    indicator_led.turn_off()
-                    continue
-                else:
-                    indicator_led.turn_on()
-
-                if graph:
-                    graph.add(movement_value)
-                logfile.record_value(movement_value)
-                analyzer.track_new_value(movement_value)
-
-        except KeyboardInterrupt:
-            log.info("Interrupt detected. Closing logfile and quitting")
-            logfile.close()
-            indicator_led.turn_off()
-            sys.exit(0)
-        except serial.SerialException:
-            log.info("USB Error. Closing everything")
-            indicator_led.turn_off()
-            logfile.close()
-            sleep_reader.close()
-        except EOFError:
-            log.info("Done reading file!")
-            if graph:
-                graph.show()
-            input("Press Enter to continue...")
-    except KeyboardInterrupt:
-        log.info("Interrupt detected. Quitting")
-        sys.exit(0)
-    except Exception as e:
-        log.error("Encountered unexpected exception: %s" % e)
-        sleep_reader = None
 
 class Analyzer(object):
     def __init__(self):
         self.values = []
         self.rem_sleep = True
 
-    def track_new_value(self, value):
+    def add(self, value):
         self.values.append(value)
+
+    @property
+    def num_values_recorded(self):
+        return len(self.values)
 
 
 class LightSwitch(object):
@@ -258,6 +177,7 @@ class Teensy(InputDevice):
 
 class InFile(InputDevice):
     def __init__(self, filename):
+        self._done = False
         try:
             self._file = open(filename, 'r')
             header = self._file.readline()
@@ -268,12 +188,21 @@ class InFile(InputDevice):
 
     def get_next_movement_value(self):
         line = self._file.readline()
+
         if line == '':
-            raise EOFError
+            self._done = True
+            return None
 
         else:
             vals = line.split(",")
             return int(vals[-1].strip())
+
+    @property
+    def data_is_available(self):
+        return not self._done
+
+    def close(self):
+        self._file.close()
 
 
 class OutFile(object):
@@ -295,10 +224,3 @@ class OutFile(object):
         date, time = str(timestamp).split(' ')
         logwriter.writerow([self.index, date, time, value])
         self.index += 1
-
-class DummyLogFile(object):
-    def record_value(self, value):
-        pass
-
-if __name__ == "__main__":
-    main()

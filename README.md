@@ -27,4 +27,28 @@ virtualenv ~/Virtualenvs/hospital-sleep-tracker
 source ~/Virtualenvs/hospital-sleep-tracker/bin/activate
 pip install -r requirements.txt
 ```
-With your virtual environment activated, run the program with a simple `python main.py`
+---
+## Usage Instructions
+### Use Case: Logging sleep from teensy onto Pi via serial (data collection)
+**Data Source:** Serial (Teensy) (future wifi support?)
+- [x] Save to logfile
+- [ ] Real-time graphing (short-term)
+- [ ] Session graphing (long-term)
+- [ ] Real-time analysis
+- [ ] Session analysis (after-the-fact)
+
+### Use Case: Analyzing data from logfile (after-the-fact analysis)
+**Data Source:** File
+- [ ] Save to logfile
+- [x] Real-time graphing (short-term)
+- [x] Session graphing (long-term)
+- [x] Real-time analysis
+- [x] Session analysis (after-the-fact)
+
+### Use Case: Analyzing real-time data live on PC (nurse with a screen)
+**Data Source:** Serial (Teensy)
+- [x] Save to logfile
+- [x] Realtime graphing (short-term)
+- [x] Session graphing (long-term)
+- [x] Realtime analysis
+- [x] Session analysis (after-the-fact)

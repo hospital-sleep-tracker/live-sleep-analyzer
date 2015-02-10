@@ -21,9 +21,9 @@ log.basicConfig(level=log.INFO, format='%(asctime)s [%(levelname)s]: %(message)s
 
 def main():
     # Parse command line arguments
-    parser = argparse.ArgumentParser(prog='Hospital Sleep Tracker',
-                                     description='Logs and analyzes realtime accelerometer input.')
-    parser.add_argument('file', help='specify an input csv file instead of using live data')
+    parser = argparse.ArgumentParser(prog='python post-analyze.py',
+                                     description='Imports a sleep file and performs after-the-fact data and graphical analysis on it')
+    parser.add_argument('file', help='target sleepfile to perform analysis on')
     args = parser.parse_args()
 
     # Check user is in the right directory

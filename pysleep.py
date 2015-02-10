@@ -53,14 +53,6 @@ class LightSwitch(object):
                 log.warning("Unable to change indicator led")
 
 
-class DummyLightSwitch(object):
-    def turn_on(self):
-        pass
-
-    def turn_off(self):
-        pass
-
-
 class Graph(object):
     """Graphs data as it is supplied"""
     def __init__(self):
@@ -78,6 +70,7 @@ class Graph(object):
     def show(self):
         pass
 
+
 class LazyGraph(object):
     def __init__(self):
         pyplot.ion()
@@ -93,6 +86,7 @@ class LazyGraph(object):
         pyplot.xlim((0, len(self.data)))
         self.line.set_data(range(0,len(self.data)), self.data)
         pyplot.draw()
+
 
 class InputDevice(object):
     def __init__(self, filename):
@@ -174,6 +168,7 @@ class Teensy(InputDevice):
 
     def is_ready():
         return self.teensy.isOpen()
+
 
 class InFile(InputDevice):
     def __init__(self, filename):

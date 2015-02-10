@@ -28,8 +28,8 @@ def main():
     graph = None
 
     # Parse command line arguments
-    parser = argparse.ArgumentParser(prog='Hospital Sleep Tracker',
-                                     description='Logs and analyzes realtime accelerometer input.')
+    parser = argparse.ArgumentParser(prog='python realtime-analyze.py',
+                                     description='Logs and performs data and garphical analysis on realtime accelerometer input')
     args = parser.parse_args()
 
     # Check user is in the right directory

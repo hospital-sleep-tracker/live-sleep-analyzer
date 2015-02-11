@@ -17,16 +17,13 @@ import logging as log
 
 import serial, usb
 
-import pysleep
-
 import numpy
 from matplotlib import pyplot, animation
+from pysleep import *
 
 log.basicConfig(level=log.INFO, format='%(asctime)s [%(levelname)s]: %(message)s')
 
 def main():
-    graph = None
-
     # Parse command line arguments
     parser = argparse.ArgumentParser(prog='python realtime-analyze.py',
                                      description='Logs and performs data and garphical analysis on realtime accelerometer input')
@@ -38,48 +35,39 @@ def main():
         sys.exit(1)
 
     try:
-        # We must initialize
-        sleep_reader = Teensy()
-        indicator_led = LightSwitch()
-        logfile = OutFile()
-        indicator_led.turn_on()
-
-        analyzer = Analyzer()
+        sleep_reader   = Teensy()
+        logfile        = OutFile()
+        realtime_graph = Graph()
+        analyzer       = Analyzer()
 
         try:
             while sleep_reader.is_ready():
-                # Read value from accelerometer
                 movement_value = sleep_reader.get_next_movement_value()
                 if movement_value is None:
                     # Got bad value from reader. Move on. Note: Index will still be incremented
-                    indicator_led.turn_off()
                     continue
-                else:
-                    indicator_led.turn_on()
 
-                if graph:
-                    graph.add(movement_value)
                 logfile.record_value(movement_value)
-                analyzer.track_new_value(movement_value)
+                realtime_graph.add(movement_value)
+                analyzer.add(movement_value)
 
         except KeyboardInterrupt:
             log.info("Interrupt detected. Closing logfile and quitting")
             logfile.close()
-            indicator_led.turn_off()
             sys.exit(0)
         except serial.SerialException:
             log.info("USB Error. Closing everything")
-            indicator_led.turn_off()
             logfile.close()
             sleep_reader.close()
         except EOFError:
             log.info("Done reading file!")
-            if graph:
-                graph.show()
+            if realtime_graph:
+                realtime_graph.show()
             input("Press Enter to continue...")
-    except KeyboardInterrupt:
-        log.info("Interrupt detected. Quitting")
-        sys.exit(0)
     except Exception as e:
         log.error("Encountered unexpected exception: %s" % e)
         sleep_reader = None
+
+
+if __name__ == "__main__":
+    main()

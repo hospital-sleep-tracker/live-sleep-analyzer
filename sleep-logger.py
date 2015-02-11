@@ -41,7 +41,6 @@ def main():
             log.error("Can't create logs directory")
             sys.exit(1)
 
-    sleep_reader = Teensy()
     logfile = None
 
     while True:
@@ -65,7 +64,6 @@ def main():
                     indicator_led.turn_on()
 
                 logfile.record_value(movement_value)
-                analyzer.track_new_value(movement_value)
 
         except KeyboardInterrupt:
             log.info("Interrupt detected. Closing logfile and quitting")
@@ -77,7 +75,6 @@ def main():
             log.info("USB Error. Closing everything")
             indicator_led.turn_off()
             logfile.close()
-            sleep_reader.close()
         except Exception as e:
             log.error("Encountered unexpected exception: %s" % e)
             sys.exit(1)

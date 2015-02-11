@@ -147,7 +147,7 @@ class Teensy(InputDevice):
             except (OSError, serial.SerialException):
                 pass
 
-    def get_next_movement_value():
+    def get_next_movement_value(self):
         """Gets new data from the provided teensy object (via readline)
         and converts it into an integer.
 
@@ -166,7 +166,7 @@ class Teensy(InputDevice):
             except:
                 log.warning("(Ignoring) Couldn't convert following value to integer: %s" % raw_value)
 
-    def is_ready():
+    def is_ready(self):
         return self.teensy.isOpen()
 
 
@@ -203,19 +203,22 @@ class InFile(InputDevice):
 class OutFile(object):
     def __init__(self):
         self.index = -1
-        logfile_name = 'logs/%s.slp.csv' % datetime.datetime.now().strftime("%m%d%Y_%H%M%S")
+        logfile_name = 'logs/%s.slp.csv' % datetime.datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
         log.info("Logging to %s" % logfile_name)
         try:
             self.logfile = open(logfile_name, 'a')
-            self.logwriter = csv.writer(logfile)
-        except:
-            log.error("Unable to open logfile. Quitting")
+            self.logwriter = csv.writer(self.logfile)
+        except Exception as e:
+            log.error("Unable to open logfile: %s" % e)
             sys.exit(1)
         # Write CSV header information
-        logwriter.writerow(['Date', 'Time', 'Reading Index', 'Movement Value'])
+        self.logwriter.writerow(['Date', 'Time', 'Reading Index', 'Movement Value'])
 
     def record_value(self, value):
         timestamp = datetime.datetime.now()
         date, time = str(timestamp).split(' ')
-        logwriter.writerow([self.index, date, time, value])
+        self.logwriter.writerow([self.index, date, time, value])
         self.index += 1
+
+    def close(self):
+        self.logfile.close()

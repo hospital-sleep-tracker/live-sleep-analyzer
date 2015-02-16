@@ -34,6 +34,7 @@ def main():
     # Create logs directory.
     try:
         os.listdir('logs')
+        upload_new_logfiles()
     except OSError:
         try:
             os.mkdir('logs')
@@ -44,11 +45,13 @@ def main():
     logfile = None
 
     while True:
+        sleep_reader = None
+        logfile = None
+        indicator_led = LightSwitch()
         try:
             # Blocking call - won't continue until a Teensy connection has been initiated
             sleep_reader = Teensy()
             logfile = OutFile()
-            indicator_led = LightSwitch()
             indicator_led.turn_on()
 
             while sleep_reader.is_ready():

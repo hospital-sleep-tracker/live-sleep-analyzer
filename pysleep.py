@@ -22,6 +22,7 @@ def upload_new_logfiles():
     sys.exit(1)
 
   # Setup FTP
+  log.info("Connecting to FTP site")
   ftp = FTP(timeout=5)
   ftp.connect(DIGITAL_OCEAN_IP)
   ftp.login(USER, PASSWD)
@@ -38,6 +39,7 @@ def upload_new_logfiles():
 
         # If not, upload it
         if len(files_on_server) == 0:
+          log.info("Uploading %s" % sleep_logfile_name)
           opened_sleep_logfile = open(sleep_logfile)
           transfer_cmd = 'STOR %s' % sleep_logfile_name
           ftp.storbinary(transfer_cmd, opened_sleep_logfile)

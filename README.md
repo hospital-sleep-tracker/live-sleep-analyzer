@@ -11,7 +11,7 @@ cp initialize_sleeptracker.sh ../
 ```
 Then add the following line to the bottom of etc/rc.local (above the `exit 0`):
 `/home/pi/initialize_sleeptracker.sh &`
-
+Then don't forget to set the [FTP Credentials](https://github.com/hospital-sleep-tracker/live-sleep-analyzer#in-a-developer-environment)
 ##### In a Developer Environment
 In order to interface with the USB device, you will need the following dependencies on your machine:
 - libusb
@@ -27,7 +27,11 @@ virtualenv ~/Virtualenvs/hospital-sleep-tracker
 source ~/Virtualenvs/hospital-sleep-tracker/bin/activate
 pip install -r requirements.txt
 ```
-
+Then don't forget to set the [FTP Credentials](https://github.com/hospital-sleep-tracker/live-sleep-analyzer#in-a-developer-environment)
+##### FTP Credentials
+To enable automatic uploading of logfiles to the server, you will need to create a file with the login credentials. We don't keep this on github for security.
+`cp sample_credentials.py credentials.py`
+Then edit the IP address, username, and password in `credentials.py` to the correct values.
 ---
 
 # Usage

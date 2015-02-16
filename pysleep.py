@@ -3,11 +3,12 @@ Shared library of classes for sleep logging, analyzing, and graphing
 """
 import re, time, sys, glob, os, csv, datetime, argparse
 import serial, usb
-from ftplib import FTP
+from ftplib import FTP, error_perm as permission_error
 import logging as log
 
 import numpy
 from matplotlib import pyplot, animation
+from socket import error as socket_error
 
 from credentials import DIGITAL_OCEAN_IP, USER, PASSWD
 
@@ -23,31 +24,40 @@ def upload_new_logfiles():
 
   # Setup FTP
   log.info("Connecting to FTP site")
-  ftp = FTP(timeout=5)
-  ftp.connect(DIGITAL_OCEAN_IP)
-  ftp.login(USER, PASSWD)
-  ftp.cwd('logs')
+  try:
+    ftp = FTP(timeout=5)
+    ftp.connect(DIGITAL_OCEAN_IP)
+    log.info("FTP Connected")
+    ftp.login(USER, PASSWD)
+    ftp.cwd('logs')
 
-  sleep_logfiles = glob.glob('./logs/*.slp.csv')
-  if len(sleep_logfiles) > 0:
-    for sleep_logfile in sleep_logfiles:
-      if os.stat(sleep_logfile).st_size > ONE_MEGABYTE:
-        # Check if file is already on the server
-        sleep_logfile_name = os.path.basename(sleep_logfile)
-        files_on_server = []
-        ftp.retrlines('LIST %s' % sleep_logfile_name, files_on_server.append)
+    sleep_logfiles = glob.glob('./logs/*.slp.csv')
+    if len(sleep_logfiles) > 0:
+      for sleep_logfile in sleep_logfiles:
+        if os.stat(sleep_logfile).st_size > ONE_MEGABYTE:
+          # Check if file is already on the server
+          sleep_logfile_name = os.path.basename(sleep_logfile)
+          files_on_server = []
+          ftp.retrlines('LIST %s' % sleep_logfile_name, files_on_server.append)
 
-        # If not, upload it
-        if len(files_on_server) == 0:
-          log.info("Uploading %s" % sleep_logfile_name)
-          opened_sleep_logfile = open(sleep_logfile)
-          transfer_cmd = 'STOR %s' % sleep_logfile_name
-          ftp.storbinary(transfer_cmd, opened_sleep_logfile)
+          # If not, upload it
+          if len(files_on_server) == 0:
+            log.info("Uploading %s" % sleep_logfile_name)
+            opened_sleep_logfile = open(sleep_logfile)
+            transfer_cmd = 'STOR %s' % sleep_logfile_name
+            ftp.storbinary(transfer_cmd, opened_sleep_logfile)
 
-      # Remove it
-      os.remove(sleep_logfile)
+        # Remove it
+        os.remove(sleep_logfile)
 
-  ftp.close()
+    ftp.close()
+    log.info("FTP closed")
+  except socket_error:
+    log.warning("FTP Connection refused. Ignoring")
+  except permission_error:
+    log.warning("FTP invalid credentials")
+  except Exception as e:
+    log.error("Unknown ftp error encountered: %s" % e)
 
 class Analyzer(object):
     def __init__(self):

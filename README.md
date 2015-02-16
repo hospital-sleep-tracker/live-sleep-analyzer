@@ -27,11 +27,15 @@ virtualenv ~/Virtualenvs/hospital-sleep-tracker
 source ~/Virtualenvs/hospital-sleep-tracker/bin/activate
 pip install -r requirements.txt
 ```
-Then don't forget to set the [FTP Credentials](https://github.com/hospital-sleep-tracker/live-sleep-analyzer#in-a-developer-environment)
+Then don't forget to set the [FTP Credentials](https://github.com/hospital-sleep-tracker/live-sleep-analyzer#ftp-credentials)
 ##### FTP Credentials
 To enable automatic uploading of logfiles to the server, you will need to create a file with the login credentials. We don't keep this on github for security.
+
 `cp sample_credentials.py credentials.py`
+
+
 Then edit the IP address, username, and password in `credentials.py` to the correct values.
+
 ---
 
 # Usage

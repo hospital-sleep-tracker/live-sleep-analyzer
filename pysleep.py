@@ -2,14 +2,50 @@
 Shared library of classes for sleep logging, analyzing, and graphing
 """
 import re, time, sys, glob, os, csv, datetime, argparse
-import logging as log
-
 import serial, usb
+from ftplib import FTP
+import logging as log
 
 import numpy
 from matplotlib import pyplot, animation
 
+from credentials import DIGITAL_OCEAN_IP, USER, PASSWD
+
+ONE_MEGABYTE = 1000000
+
 log.basicConfig(level=log.INFO, format='%(asctime)s [%(levelname)s]: %(message)s')
+
+def upload_new_logfiles():
+  # Make sure we're in the right directory
+  if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):
+    log.error("Please cd into the script directory before running it!")
+    sys.exit(1)
+
+  # Setup FTP
+  ftp = FTP(timeout=5)
+  ftp.connect(DIGITAL_OCEAN_IP)
+  ftp.login(USER, PASSWD)
+  ftp.cwd('logs')
+
+  sleep_logfiles = glob.glob('./logs/*.slp.csv')
+  if len(sleep_logfiles) > 0:
+    for sleep_logfile in sleep_logfiles:
+      if os.stat(sleep_logfile).st_size > ONE_MEGABYTE:
+        # Check if file is already on the server
+        sleep_logfile_name = os.path.basename(sleep_logfile)
+        files_on_server = []
+        ftp.retrlines('LIST %s' % sleep_logfile_name, files_on_server.append)
+
+        # If not, upload it
+        if len(files_on_server) == 0:
+          opened_sleep_logfile = open(sleep_logfile)
+          transfer_cmd = 'STOR %s' % sleep_logfile_name
+          ftp.storbinary(transfer_cmd, opened_sleep_logfile)
+
+      # Remove it
+      os.remove(sleep_logfile)
+
+  ftp.close()
 
 class Analyzer(object):
     def __init__(self):

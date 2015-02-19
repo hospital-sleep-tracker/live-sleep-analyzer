@@ -10,13 +10,22 @@ import numpy
 from matplotlib import pyplot, animation
 from socket import error as socket_error
 
-from credentials import DIGITAL_OCEAN_IP, USER, PASSWD
+CREDENTIALS_PROVIDED = True
+try:
+  from credentials import DIGITAL_OCEAN_IP, USER, PASSWD
+except ImportError:
+  CREDENTIALS_PROVIDED = False
+
 
 ONE_MEGABYTE = 1000000
 
 log.basicConfig(level=log.INFO, format='%(asctime)s [%(levelname)s]: %(message)s')
 
 def upload_new_logfiles():
+  if not CREDENTIALS_PROVIDED:
+    log.warning("Credentials file not found! Can't upload results")
+    return
+
   # Make sure we're in the right directory
   if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):
     log.error("Please cd into the script directory before running it!")
@@ -32,7 +41,7 @@ def upload_new_logfiles():
     ftp.cwd('logs')
 
     sleep_logfiles = glob.glob('./logs/*.slp.csv')
-    if len(sleep_logfiles) > 0:
+    if sleep_logfiles:
       for sleep_logfile in sleep_logfiles:
         if os.stat(sleep_logfile).st_size > ONE_MEGABYTE:
           # Check if file is already on the server
@@ -41,19 +50,21 @@ def upload_new_logfiles():
           ftp.retrlines('LIST %s' % sleep_logfile_name, files_on_server.append)
 
           # If not, upload it
-          if len(files_on_server) == 0:
+          if not files_on_server:
             log.info("Uploading %s" % sleep_logfile_name)
             opened_sleep_logfile = open(sleep_logfile)
             transfer_cmd = 'STOR %s' % sleep_logfile_name
-            ftp.storbinary(transfer_cmd, opened_sleep_logfile)
-
-        # Remove it
-        os.remove(sleep_logfile)
+            upload_result = ftp.storbinary(transfer_cmd, opened_sleep_logfile)
+            if upload_result == '226 Transfer complete.':
+                # Succesful upload. remove the logfile
+                os.remove(sleep_logfile)
+          else:
+            log.info("File has already been uploaded: %s" % sleep_logfile_name)
 
     ftp.close()
     log.info("FTP closed")
   except socket_error:
-    log.warning("FTP Connection refused. Ignoring")
+    log.warning("FTP Connection refused")
   except permission_error:
     log.warning("FTP invalid credentials")
   except Exception as e:

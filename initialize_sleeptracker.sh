@@ -23,7 +23,7 @@ fi
 git reset --hard origin/master
 while :
 do
-  python main.py > logs/`date +%m%d%Y_%k%M%S.log`
+  python sleep-logger.py
 done
 
 exit 1

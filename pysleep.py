@@ -4,7 +4,7 @@ Shared library of classes for sleep logging, analyzing, and graphing
 import re, time, sys, glob, os, csv, datetime, argparse
 import serial, usb
 from ftplib import FTP, error_perm as permission_error
-import logging as log
+import logging, logging.handlers
 
 import numpy
 from matplotlib import pyplot, animation
@@ -12,30 +12,55 @@ from socket import error as socket_error
 
 CREDENTIALS_PROVIDED = True
 try:
-  from credentials import DIGITAL_OCEAN_IP, USER, PASSWD
+  from credentials import REMOTE_IP, USER, PASSWD, SYSLOG_UDP_PORT
 except ImportError:
   CREDENTIALS_PROVIDED = False
 
 
 ONE_MEGABYTE = 1000000
 
-log.basicConfig(level=log.INFO, format='%(asctime)s [%(levelname)s]: %(message)s')
+log = logging.getLogger('sleep-logger')
+log.setLevel(logging.DEBUG)
+
+# File logger
+fh = logging.FileHandler('sleeplogger.log')
+fh.setLevel(logging.INFO)
+
+# Console Logger
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+
+# Formatter
+formatter = logging.Formatter('%(asctime)s [%(levelname)s]: %(message)s')
+ch.setFormatter(formatter)
+fh.setFormatter(formatter)
+
+# Add handlers
+log.addHandler(ch)
+log.addHandler(fh)
+
+if CREDENTIALS_PROVIDED:
+    sh = logging.handlers.SysLogHandler(address=(REMOTE_IP, SYSLOG_UDP_PORT))
+    sh.setLevel(logging.WARNING)
+    sh.setFormatter(formatter)
+    log.addHandler(sh)
+log.log(logging.CRITICAL, 'Logging initialized')
 
 def upload_new_logfiles():
   if not CREDENTIALS_PROVIDED:
-    log.warning("Credentials file not found! Can't upload results")
-    return
+      log.warning("Credentials file not found! Can't upload results")
+      return
 
-  # Make sure we're in the right directory
+    # Make sure we're in the right directory
   if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):
-    log.error("Please cd into the script directory before running it!")
-    sys.exit(1)
+      log.error("Please cd into the script directory before running it!")
+      sys.exit(1)
 
   # Setup FTP
   log.info("Connecting to FTP site")
   try:
     ftp = FTP(timeout=5)
-    ftp.connect(DIGITAL_OCEAN_IP)
+    ftp.connect(REMOTE_IP)
     log.info("FTP Connected")
     ftp.login(USER, PASSWD)
     ftp.cwd('logs')
@@ -163,6 +188,7 @@ class Teensy(InputDevice):
         self.teensy = None
         """Serial object"""
 
+        log.info("Searching for USB device")
         while self.teensy is None:
             self.teensy = self._get_teensy_usb()
 
@@ -197,7 +223,7 @@ class Teensy(InputDevice):
         # Method 1: Match via ready-to-read serial ports
         ready_usb_devices = []
         for port in ports:
-            log.info("Checking: %s" % port)
+            log.debug("Checking: %s" % port)
             try:
                 teensy = serial.Serial(port=port, timeout=1)
                 if teensy.read(4) != '':

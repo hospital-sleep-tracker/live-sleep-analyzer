@@ -13,11 +13,9 @@ TEENSY_PRODUCT_ID = 0x0483
 DISPLAY_GRAPH = False
 
 import argparse, os
-import logging as log
+import logging
 
 from pysleep import *
-
-log.basicConfig(level=log.INFO, format='%(asctime)s [%(levelname)s]: %(message)s')
 
 def main():
     # Parse command line arguments
@@ -41,7 +39,6 @@ def main():
         except OSError:
             log.error("Can't create logs directory")
             sys.exit(1)
-
     logfile = None
 
     while True:

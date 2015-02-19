@@ -16,9 +16,6 @@ import argparse, os
 import logging as log
 from pysleep import *
 
-
-log.basicConfig(level=log.INFO, format='%(asctime)s [%(levelname)s]: %(message)s')
-
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(prog='python post-analyze.py',

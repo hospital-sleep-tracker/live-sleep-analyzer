@@ -5,7 +5,7 @@ echo 0 >/sys/class/leds/ACT/brightness
 if ping -c 1 archive.raspberrypi.org &> /dev/null; then
   apt-get update
   apt-get upgrade -y --force-yes
-  apt-get install -y python-usb python-serial python-matplotlib vsftpd
+  apt-get install -y screen python-usb python-serial python-matplotlib vsftpd
 fi
 
 cd /home/pi

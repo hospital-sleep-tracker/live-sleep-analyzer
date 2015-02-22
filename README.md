@@ -3,15 +3,11 @@ This project is funded by [Enabling Engineering](http://nuweb9.neu.edu/enable/) 
 
 # Installation
 ##### On a Raspberry Pi
-The Raspbian distribution of the Raspberry Pi can be used as a host system to log sleep for later analysis. Future plans might use the Pi as a central HUB to wirelessly track sleep from multiple patients simultaneously. The below instructions cover setting up the tracking scripts on a fresh Raspbian image. Run the following commands from the home directory of the pi to set it up.
-```
-git clone https://github.com/hospital-sleep-tracker/live-sleep-analyzer.git
-cd live-sleep-analyzer/
-cp initialize_sleeptracker.sh ../
-```
-Then add the following line to the bottom of etc/rc.local (above the `exit 0`):
-`/home/pi/initialize_sleeptracker.sh &`
-Then don't forget to set the [FTP Credentials](https://github.com/hospital-sleep-tracker/live-sleep-analyzer#in-a-developer-environment)
+The Raspbian distribution of the Raspberry Pi can be used as a host system to log sleep for later analysis. Future plans might use the Pi as a central hub to wirelessly track sleep from multiple patients simultaneously. Installation is pretty simple: first clone the repo into the pi's home directory, then add the following line to the bottom of etc/rc.local (above the `exit 0`):
+
+`/home/pi/live-sleep-analyzer/initialize_sleeptracker.sh &`
+
+Then don't forget to set the [FTP Credentials](https://github.com/hospital-sleep-tracker/live-sleep-analyzer#ftp-credentials)
 ##### In a Developer Environment
 In order to interface with the USB device, you will need the following dependencies on your machine:
 - libusb
@@ -31,17 +27,17 @@ Then don't forget to set the [FTP Credentials](https://github.com/hospital-sleep
 ##### FTP Credentials
 To enable automatic uploading of logfiles to the server, you will need to create a file with the login credentials. We don't keep this on github for security.
 
-`cp sample_credentials.py credentials.py`
-
-
-Then edit the IP address, username, and password in `credentials.py` to the correct values.
+```
+cp sample_credentials.py credentials.py
+```
+Then change the IP address, username, and password in `credentials.py` to the correct values.
 
 ---
 
 # Usage
 ### **Data Collection:** Logging Live Sleep from Teensy onto Pi via Serial
-*Primarily run on the Raspberry Pi, this script is useful for pure sleep-data collection. No graphs, analysis, or flashy features. The script searches for a USB connected serial and begins tracking data into a timestamped logfile. A new logfile can be started simply by disconnecting and reconnecting the USB device.*
- **WARNING: This script may interfere with other connected USB devices. Please remove any and all unnecessary USB devices before starting the script. **
+*Primarily run on the Raspberry Pi, this script is useful for pure sleep-data collection. No graphs, analysis, or flashy features. The script searches for a USB connected serial device and begins tracking data into a timestamped logfile. A new logfile can be started simply by disconnecting and reconnecting the USB device.*
+ **WARNING: This script may interfere with other connected USB devices. It is recommended to remove any and all unnecessary USB devices before starting the script. **
 
 ##### Usage
 `python sleep-logger.py [-h]`
@@ -82,7 +78,7 @@ Sleep File
 ##### Usage
 `python realtime-analysis.py [-h]`
 
-##### Data Source: 
+##### Data Source:
 Serial (Teensy)
 - [x] Save to logfile
 - [x] Realtime graphing (short-term)

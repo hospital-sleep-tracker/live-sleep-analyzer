@@ -1,7 +1,4 @@
 #!/bin/bash
-echo none >/sys/class/leds/ACT/trigger
-echo 0 >/sys/class/leds/ACT/brightness
-
 if ping -c 1 archive.raspberrypi.org &> /dev/null; then
   apt-get update
   apt-get upgrade -y --force-yes

@@ -109,18 +109,42 @@ class Analyzer(object):
 
 
 class LightSwitch(object):
-    """Used to turn the raspberry pi indicator light on and off.
-    The class is necessary to hold state of whether the light is currently on or off.
-    It is much faster to save state then do an arbitrary hardware write every time.
+    """
+    Used to turn the raspberry pi indicator light on and off.
     """
     def __init__(self):
         self._is_on = False
+        """
+        True if light is currently on.
+        False if light is currentliy off
+        """
+
+        self.light_file = None
+        """
+        Filepath to the RPi's light, or None if this is not an RPi.
+        If 'None', calls to turn_on and turn_off will not do anything.
+        """
+
+        """RPi's have different filepaths to trigger the LEDs depending on the hardware revision,
+        so we set the correct path here"""
+        try:
+            import RPi.GPIO
+            if RPi.GPIO.RPI_REVISION == 3:
+                self.light_file = '/sys/class/leds/led0/brightness'
+                with open('/sys/class/leds/led0/trigger') as f:
+                    f.write('none')
+            elif RPi.GPIO.RPI_REVISION == 2:
+                self.light_file = '/sys/class/leds/ACT/brightness'
+                with open('/sys/class/leds/ACT/trigger') as f:
+                    f.write('none')
+        except ImportError:
+            pass
 
     def turn_on(self):
         """Turns the light on, ONLY if it is currently off"""
-        if not self._is_on:
+        if self.light_file and not self._is_on:
             try:
-                with open('/sys/class/leds/ACT/brightness', 'w') as f:
+                with open(self.light_file, 'w') as f:
                     f.write('1')
                 self._is_on = True
             except IOError:
@@ -128,9 +152,9 @@ class LightSwitch(object):
 
     def turn_off(self):
         """Turns the ligh off, ONLY if it is currently on"""
-        if self._is_on:
+        if self.light_file and self._is_on:
             try:
-                with open('/sys/class/leds/ACT/brightness', 'w') as f:
+                with open(self.light_file, 'w') as f:
                     f.write('0')
                 self._is_on = False
             except IOError:
@@ -180,7 +204,7 @@ class InputDevice(object):
         raise NotImplementedError()
 
     def is_ready(self):
-        return True
+        raise NotImplementedError()
 
 
 class Teensy(InputDevice):

@@ -28,15 +28,13 @@ def main():
         log.error("Please cd into the script directory before running it!")
         sys.exit(1)
 
-    graph = LazyGraph()
+    graph_with_analyzer = AnalyzerWithGraph()
     sleep_reader = InFile(args.file)
-    analyzer = Analyzer()
 
     while sleep_reader.data_is_available:
         try:
             movement_value = sleep_reader.get_next_movement_value()
-            graph.add(movement_value)
-            analyzer.add(movement_value)
+            graph_with_analyzer.add(movement_value)
 
         except KeyboardInterrupt:
             log.info("Interrupt detected. Quitting")
@@ -47,11 +45,12 @@ def main():
             sleep_reader.close()
 
     # Run post-load analysis
-    log.info("Loaded %d values" % analyzer.num_values_recorded)
+    log.info("Loaded %d values" % graph_with_analyzer.num_values_recorded)
     sleep_reader.close()
-    graph.show()
+    graph_with_analyzer.show()
 
-    input("Press Enter to continue...")
+
+    _ = input("Press Enter to continue...")
 
 
 if __name__ == "__main__":

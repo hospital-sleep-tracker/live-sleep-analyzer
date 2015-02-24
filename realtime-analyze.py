@@ -21,8 +21,6 @@ import numpy
 from matplotlib import pyplot, animation
 from pysleep import *
 
-log.basicConfig(level=log.INFO, format='%(asctime)s [%(levelname)s]: %(message)s')
-
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(prog='python realtime-analyze.py',
@@ -37,8 +35,7 @@ def main():
     try:
         sleep_reader   = Teensy()
         logfile        = OutFile()
-        realtime_graph = Graph()
-        analyzer       = Analyzer()
+        graph_with_analyzer = AnalyzerWithGraph()
 
         try:
             while sleep_reader.is_ready():
@@ -48,8 +45,8 @@ def main():
                     continue
 
                 logfile.record_value(movement_value)
-                realtime_graph.add(movement_value)
-                analyzer.add(movement_value)
+                graph_with_analyzer.add(movement_value)
+                graph_with_analyzer.show()
 
         except KeyboardInterrupt:
             log.info("Interrupt detected. Closing logfile and quitting")
@@ -61,8 +58,8 @@ def main():
             sleep_reader.close()
         except EOFError:
             log.info("Done reading file!")
-            if realtime_graph:
-                realtime_graph.show()
+            if graph_with_analyzer:
+                graph_with_analyzer.show()
             input("Press Enter to continue...")
     except Exception as e:
         log.error("Encountered unexpected exception: %s" % e)

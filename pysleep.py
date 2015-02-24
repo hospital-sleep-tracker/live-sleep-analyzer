@@ -66,25 +66,24 @@ def upload_new_logfiles():
     ftp.cwd('logs')
 
     sleep_logfiles = glob.glob('./logs/*.slp.csv')
-    if sleep_logfiles:
-      for sleep_logfile in sleep_logfiles:
-        if os.stat(sleep_logfile).st_size > ONE_MEGABYTE:
-          # Check if file is already on the server
-          sleep_logfile_name = os.path.basename(sleep_logfile)
-          files_on_server = []
-          ftp.retrlines('LIST %s' % sleep_logfile_name, files_on_server.append)
+    for sleep_logfile in sleep_logfiles:
+      if os.stat(sleep_logfile).st_size > ONE_MEGABYTE:
+        # Check if file is already on the server
+        sleep_logfile_name = os.path.basename(sleep_logfile)
+        files_on_server = []
+        ftp.retrlines('LIST %s' % sleep_logfile_name, files_on_server.append)
 
-          # If not, upload it
-          if not files_on_server:
-            log.info("Uploading %s" % sleep_logfile_name)
-            opened_sleep_logfile = open(sleep_logfile)
-            transfer_cmd = 'STOR %s' % sleep_logfile_name
-            upload_result = ftp.storbinary(transfer_cmd, opened_sleep_logfile)
-            if upload_result == '226 Transfer complete.':
-                # Succesful upload. remove the logfile
-                os.remove(sleep_logfile)
-          else:
-            log.info("File has already been uploaded: %s" % sleep_logfile_name)
+        # If not, upload it
+        if not files_on_server:
+          log.info("Uploading %s" % sleep_logfile_name)
+          opened_sleep_logfile = open(sleep_logfile)
+          transfer_cmd = 'STOR %s' % sleep_logfile_name
+          upload_result = ftp.storbinary(transfer_cmd, opened_sleep_logfile)
+          if upload_result == '226 Transfer complete.':
+              # Succesful upload. remove the logfile
+              os.remove(sleep_logfile)
+        else:
+          log.info("File has already been uploaded: %s" % sleep_logfile_name)
 
     ftp.close()
     log.info("FTP closed")
@@ -95,17 +94,97 @@ def upload_new_logfiles():
   except Exception as e:
     log.error("Unknown ftp error encountered: %s" % e)
 
-class Analyzer(object):
-    def __init__(self):
-        self.values = []
-        self.rem_sleep = True
+class Data(object):
+  def __init__(self):
+    self.values = []
+    self.rem_sleep = True
 
-    def add(self, value):
-        self.values.append(value)
+  def add(self, value):
+    self.values.append(value)
 
-    @property
-    def num_values_recorded(self):
-        return len(self.values)
+  @property
+  def num_values_recorded(self):
+    return len(self.values)
+
+  # Alias
+  @property
+  def next_available_index(self):
+    return self.num_values_recorded
+
+  @property
+  def last_recorded_index(self):
+    return self.num_values_recorded - 1
+
+  def show(self):
+    pass
+
+
+class Analyzer(Data):
+  def __init__(self):
+    super(Analyzer, self).__init__()
+    self.min_value = 99999999
+    self.max_value = 0
+    self.occurances_of = {}
+    self.bumps = {}
+
+  def add(self, value):
+    assert value != None
+    super(Analyzer, self).add(value)
+
+    # Run analysis here
+    if value < self.min_value:
+      self.min_value = value
+
+    if value > self.max_value:
+      self.max_value = value
+
+    try:
+      self.occurances_of[value] += 1
+    except KeyError:
+      self.occurances_of[value] = 1
+
+    # check for bumps
+    if value >= 3:
+      log.info("Bump Detected")
+
+  def show(self):
+    super(Analyzer, self).show()
+    log.info("Max: %d" % self.max_value)
+    log.info("Min: %d" % self.min_value)
+
+
+class Graph(Data):
+  """Graphs data as it is supplied"""
+  def __init__(self):
+    super(Graph, self).__init__()
+    pyplot.ion()
+    self.ax = pyplot.axes(xlim=(0, 50), ylim=(0, 200))
+    self.line, = self.ax.plot(self.values, lw=2)
+
+  def add(self, movement_value):
+    self.values.append(movement_value)
+    del self.values[0]
+    self.line.set_data(range(0,50), self.values)
+    pyplot.draw()
+
+  def show(self):
+    super(Graph, self).show()
+
+
+class LazyGraph(Data):
+  def __init__(self):
+    super(LazyGraph, self).__init__()
+    pyplot.ion()
+    self.values = []
+    self.ax = pyplot.axes(xlim=(0, 50), ylim=(0, 250))
+    self.line, = self.ax.plot(self.values, lw=2)
+
+  def show(self):
+    super(LazyGraph, self).show()
+    pyplot.ylim((0, max(self.values)))
+    pyplot.xlim((0, len(self.values)))
+    self.line.set_data(range(0,len(self.values)), self.values)
+    pyplot.draw()
 
 
 class LightSwitch(object):
@@ -159,41 +238,6 @@ class LightSwitch(object):
                 self._is_on = False
             except IOError:
                 log.warning("Unable to change indicator led")
-
-
-class Graph(object):
-    """Graphs data as it is supplied"""
-    def __init__(self):
-        pyplot.ion()
-        self.data = [0] * 50
-        self.ax = pyplot.axes(xlim=(0, 50), ylim=(0, 200))
-        self.line, = self.ax.plot(self.data, lw=2)
-
-    def add(self, movement_value):
-        self.data.append(movement_value)
-        del self.data[0]
-        self.line.set_data(range(0,50), self.data)
-        pyplot.draw()
-
-    def show(self):
-        pass
-
-
-class LazyGraph(object):
-    def __init__(self):
-        pyplot.ion()
-        self.data = []
-        self.ax = pyplot.axes(xlim=(0, 50), ylim=(0, 200))
-        self.line, = self.ax.plot(self.data, lw=2)
-
-    def add(self, movement_value):
-        self.data.append(movement_value)
-
-    def show(self):
-        pyplot.ylim((0, 200))
-        pyplot.xlim((0, len(self.data)))
-        self.line.set_data(range(0,len(self.data)), self.data)
-        pyplot.draw()
 
 
 class InputDevice(object):
@@ -280,33 +324,33 @@ class Teensy(InputDevice):
 
 
 class InFile(InputDevice):
-    def __init__(self, filename):
-        self._done = False
-        try:
-            self._file = open(filename, 'r')
-            header = self._file.readline()
+  def __init__(self, filename):
+    self._done = False
+    try:
+      self._file = open(filename, 'r')
+      header = self._file.readline()
 
-        except:
-            log.error("Couldn't open input file.")
-            sys.exit(1)
+    except:
+      log.error("Couldn't open input file.")
+      sys.exit(1)
 
-    def get_next_movement_value(self):
-        line = self._file.readline()
+  def get_next_movement_value(self):
+    line = self._file.readline()
 
-        if line == '':
-            self._done = True
-            return None
+    if line == '':
+      self._done = True
+      return None
 
-        else:
-            vals = line.split(",")
-            return int(vals[-1].strip())
+    else:
+      vals = line.split(",")
+      return int(vals[-1].strip())
 
-    @property
-    def data_is_available(self):
-        return not self._done
+  @property
+  def data_is_available(self):
+    return not self._done
 
-    def close(self):
-        self._file.close()
+  def close(self):
+    self._file.close()
 
 
 class OutFile(object):
@@ -331,3 +375,6 @@ class OutFile(object):
 
     def close(self):
         self.logfile.close()
+
+class AnalyzerWithGraph(Analyzer, LazyGraph):
+  pass

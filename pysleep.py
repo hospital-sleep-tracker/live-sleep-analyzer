@@ -47,14 +47,18 @@ if CREDENTIALS_PROVIDED:
 log.log(logging.CRITICAL, 'Logging initialized')
 
 def upload_new_logfiles():
+  """
+  Global function which quickly scans for log files which exist locally, but not on the remote fileserver.
+  Any files which meet the criteria are uploaded, then removed locally.
+  """
   if not CREDENTIALS_PROVIDED:
-      log.warning("Credentials file not found! Can't upload results")
-      return
+    log.warning("Credentials file not found! Can't upload results")
+    return
 
     # Make sure we're in the right directory
   if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):
-      log.error("Please cd into the script directory before running it!")
-      sys.exit(1)
+    log.error("Please cd into the script directory before running it!")
+    sys.exit(1)
 
   # Setup FTP
   log.info("Connecting to FTP site")
@@ -100,6 +104,7 @@ class Data(object):
     self.rem_sleep = True
 
   def add(self, value):
+    assert value != None, "Can't store 'None' as reading"
     self.values.append(value)
 
   @property
@@ -122,19 +127,17 @@ class Data(object):
 class Analyzer(Data):
   def __init__(self):
     super(Analyzer, self).__init__()
-    self.min_value = 99999999
     self.max_value = 0
     self.occurances_of = {}
     self.bumps = {}
+    self.phase = 0
+    self.last_values = []
 
   def add(self, value):
-    assert value != None
+    # call parent, to add value to DataStore
     super(Analyzer, self).add(value)
 
-    # Run analysis here
-    if value < self.min_value:
-      self.min_value = value
-
+    # Then run analysis
     if value > self.max_value:
       self.max_value = value
 
@@ -145,12 +148,11 @@ class Analyzer(Data):
 
     # check for bumps
     if value >= 3:
-      log.info("Bump Detected")
+      pass
 
   def show(self):
     super(Analyzer, self).show()
     log.info("Max: %d" % self.max_value)
-    log.info("Min: %d" % self.min_value)
 
 
 class Graph(Data):
@@ -326,24 +328,47 @@ class Teensy(InputDevice):
 class InFile(InputDevice):
   def __init__(self, filename):
     self._done = False
+    """
+    This flag is used by the parent programs to determine if more data is available from the input file.
+    """
+
+    self.keys = []
+    """
+    These are the keys which are text-description of what each CSV value represents in a line.
+    This information is set once at the beginning, from the first line of the CSV file.
+    """
+
+    self.previous_values = []
+    """
+    These are the values read from the previous line of code. Displayed when an error is encountered
+    """
     try:
       self._file = open(filename, 'r')
-      header = self._file.readline()
 
-    except:
-      log.error("Couldn't open input file.")
+      # Set self.keys
+      header = self._file.readline().strip()
+      for key in header.split(","):
+        self.keys.append(key)
+
+    except Exception as e:
+      log.error("Couldn't open input file: %s" % e)
       sys.exit(1)
 
   def get_next_movement_value(self):
-    line = self._file.readline()
+    line = self._file.readline().strip()
 
-    if line == '':
+    if line == '' or line == None:
       self._done = True
       return None
 
     else:
-      vals = line.split(",")
-      return int(vals[-1].strip())
+      values = line.split(",")
+      assert len(values) == len(self.keys), "Malformed sleepfile! Last correct line: %s" % self.previous_values
+      self.previous_values = values
+      try:
+        return int(values[-1].strip())
+      except ValueError:
+        log.error("Malformed sleepfile! Last correct line: %s" % self.previous_values)
 
   @property
   def data_is_available(self):

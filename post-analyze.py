@@ -34,8 +34,8 @@ def main():
     while sleep_reader.data_is_available:
         try:
             movement_value = sleep_reader.get_next_movement_value()
-            graph_with_analyzer.add(movement_value)
-
+            if movement_value:
+                graph_with_analyzer.add(movement_value)
         except KeyboardInterrupt:
             log.info("Interrupt detected. Quitting")
             sleep_reader.close()
@@ -43,15 +43,15 @@ def main():
         except Exception as e:
             log.error("Encountered unexpected exception: %s" % e)
             sleep_reader.close()
+            sys.exit(1)
 
     # Run post-load analysis
     log.info("Loaded %d values" % graph_with_analyzer.num_values_recorded)
     sleep_reader.close()
     graph_with_analyzer.show()
 
-
-    _ = input("Press Enter to continue...")
-
+    print 'Press Enter to Quit...'
+    raw_input()
 
 if __name__ == "__main__":
     main()

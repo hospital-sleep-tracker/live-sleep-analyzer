@@ -131,12 +131,8 @@ class LightSwitch(object):
             import RPi.GPIO
             if RPi.GPIO.RPI_REVISION == 3:
                 self.light_file = '/sys/class/leds/led0/brightness'
-                with open('/sys/class/leds/led0/trigger') as f:
-                    f.write('none')
             elif RPi.GPIO.RPI_REVISION == 2:
                 self.light_file = '/sys/class/leds/ACT/brightness'
-                with open('/sys/class/leds/ACT/trigger') as f:
-                    f.write('none')
         except ImportError:
             pass
 

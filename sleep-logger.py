@@ -7,13 +7,7 @@ Use Case: Logging sleep using only Pi<->Teensy (data collection)
   x realtime analysis
   x after-the-fact analysis
 """
-DEBUG_ON = True
-TEENSY_VENDOR_ID = 0x16c0
-TEENSY_PRODUCT_ID = 0x0483
-DISPLAY_GRAPH = False
-
-import argparse, os
-import logging
+import argparse
 
 from pysleep import *
 
@@ -23,7 +17,6 @@ def main():
     parser = argparse.ArgumentParser(prog='python sleep-logger.py',
                                      description='Logs movement information from accelerometer input into logfile',
                                      usage='python sleep-logger.py [-h]')
-    args = parser.parse_args()
 
     # Check user is in the right directory
     if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):
@@ -40,45 +33,41 @@ def main():
         except OSError:
             log.error("Can't create logs directory")
             sys.exit(1)
-    logfile = None
 
-    while True:
-        sleep_reader = None
-        logfile = None
-
+    run = True
+    # This loop runs once for every log session
+    while run:
+        sleep_log = None
         try:
             # Blocking call - won't continue until a Teensy connection has been initiated
             sleep_reader = Teensy()
-            logfile = OutFile()
+            sleep_log = OutFile()
             LightSwitch.turn_on()
 
             while sleep_reader.is_ready():
                 # Read value from accelerometer
-                movement_value = sleep_reader.get_next_movement_value()
+                sleep_entry = sleep_reader.get_next_sleep_entry()
 
                 # Handle case where bad value is received from reader
-                if movement_value is None:
+                if sleep_entry is None:
                     # Move on. Note: Index will still be incremented
                     LightSwitch.turn_off()
                     continue
                 else:
                     LightSwitch.turn_on()
 
-                logfile.record_value(movement_value)
+                sleep_log.write_entry(sleep_entry)
 
         except KeyboardInterrupt:
             log.info("Interrupt detected. Closing logfile and quitting")
-            if logfile:
-              logfile.close()
+            if sleep_log:
+                sleep_log.close()
             LightSwitch.turn_off()
-            sys.exit(0)
+            run = False
         except serial.SerialException:
             log.info("USB Error. Closing everything")
             LightSwitch.turn_off()
-            logfile.close()
-        except Exception as e:
-            log.error("Encountered unexpected exception: %s" % e)
-            sys.exit(1)
+            sleep_log.close()
 
 
 if __name__ == "__main__":

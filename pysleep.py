@@ -45,68 +45,9 @@ fh.setFormatter(formatter)
 log.addHandler(ch)
 log.addHandler(fh)
 
-def upload_new_logfiles():
-    """
-    Global function which quickly scans for log files which exist locally, but not on the remote fileserver.
-    Any files which meet the criteria are uploaded, then removed locally.
-    """
-    if not CREDENTIALS_PROVIDED:
-        log.warning("Credentials file not found! Can't upload results")
-        return
-
-        # Make sure we're in the right directory
-    if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):
-        log.error("Please cd into the script directory before running it!")
-        sys.exit(1)
-
-    # Setup FTP
-    log.info("Connecting to FTP site")
-    try:
-        ftp = FTP(timeout=5)
-        ftp.connect(REMOTE_IP)
-        log.info("FTP Connected")
-        ftp.login(USER, PASSWD)
-        ftp.cwd('logs')
-
-        sleep_logs = glob.glob('./logs/*.slp.csv')
-        log.info("Found local logfiles: %s" % slee_logs)
-        for sleep_log in sleep_logs:
-            sleep_log_filename = os.path.basename(sleep_log)
-            if os.stat(sleep_log).st_size < MIN_SIZE_FOR_UPLOAD:
-                log.info("Skipping %s: sleeplog is < %s bytes " % (sleep_log_filename, MIN_SIZE_FOR_UPLOAD))
-                continue
-
-            # Check if file is already on the server
-            files_on_server = []
-            ftp.retrlines('LIST %s' % sleep_log_filename, files_on_server.append)
-            if files_on_server:
-                log.info("Skipping %s: sleeplog is already on server" % sleep_log_filename, MIN_SIZE_FOR_UPLOAD)
-                continue
-
-            # If not, upload it
-            log.info("Uploading %s" % sleep_log_filename)
-            opened_sleep_log = open(sleep_log)
-            transfer_cmd = 'STOR %s' % sleep_log_filename
-            upload_result = ftp.storbinary(transfer_cmd, opened_sleep_log)
-            if upload_result == '226 Transfer complete.':
-                # Successful upload. remove the logfile
-                log.info("Upload successful")
-                os.remove(sleep_log)
-            else:
-                log.warning("Upload unsuccessful")
-
-        ftp.close()
-        log.info("FTP closed")
-    except socket_error:
-        log.warning("FTP Connection refused")
-    except permission_error:
-        log.warning("FTP invalid credentials")
-    except Exception as e:
-        log.error("Unknown ftp error encountered: %s" % e)
-
 
 class SleepEntryStore(object):
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.values = []
 
     def add_entry(self, values):
@@ -167,13 +108,13 @@ class SleepAnalyzer(SleepEntryStore):
         if movement_value > self.max_value:
             self.max_value = movement_value
 
-        if movement_value not in self.occurances_of.keys():
+        if movement_value not in self.occurrences_of.keys():
             self.occurrences_of[movement_value] = 1
         else:
             self.occurrences_of[movement_value] = 1
 
         if sum(self.last_values) > self.min_movement_sum:
-            print sleep_entry, sum(self.last_values)
+            print "Analyzed: %s    History Sum: %d" % (sleep_entry, sum(self.last_values))
 
     def show(self):
         """
@@ -182,9 +123,9 @@ class SleepAnalyzer(SleepEntryStore):
         super(SleepAnalyzer, self).show()
         log.info("Max: %d" % self.max_value)
         most_occurrences = max(self.occurrences_of)
-        log.info("Mode: %d   Occurences: %d" %
-                 ([k for k in self.occurences_of if self.occurences_of[k] == most_occurrences], most_occurrences))
-        log.info("Mean: %d" % numpy.mean(self.values))
+        log.info("Mode: %s   Occurences: %d" %
+                 ([k for k in self.occurrences_of if self.occurrences_of[k] == most_occurrences], most_occurrences))
+        log.info("Mean: %d" % numpy.mean([sleep_entry.movement_value for sleep_entry in self.values]))
 
 
 class Graph(SleepEntryStore):
@@ -205,8 +146,8 @@ class Graph(SleepEntryStore):
 
 
 class LazyGraph(SleepEntryStore):
-    def __init__(self):
-        super(LazyGraph, self).__init__()
+    def __init__(self, **kwargs):
+        super(LazyGraph, self).__init__(**kwargs)
         pyplot.ion()
         self.values = []
         self.ax = pyplot.axes(xlim=(0, 50), ylim=(0, 250))
@@ -216,7 +157,7 @@ class LazyGraph(SleepEntryStore):
         super(LazyGraph, self).show()
         pyplot.ylim((0, 100))
         pyplot.xlim((0, len(self.values)))
-        self.line.set_data(range(0, len(self.values)), [value['Movement Value'] for value in self.values])
+        self.line.set_data(range(0, len(self.values)), [value.movement_value for value in self.values])
         pyplot.draw()
 
 
@@ -242,7 +183,7 @@ class LightSwitch(object):
 
 
 class SleepReader(object):
-    def __init__(self, filename):
+    def __init__(self, **kwargs):
         self.next_available_index = 0
 
     def get_next_sleep_entry(self):
@@ -253,7 +194,8 @@ class SleepReader(object):
 
 
 class Teensy(SleepReader):
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super(Teensy, self).__init__(**kwargs)
         self.teensy = None
         """Serial object"""
 
@@ -323,8 +265,13 @@ class Teensy(SleepReader):
 
 
 class InFile(SleepReader):
-    def __init__(self, filename):
+    def __init__(self, filename, **kwargs):
+        """
+        Opens the specified file, and reads the header line
+        """
+        super(InFile, self).__init__(**kwargs)
         self.last_sleep_entry = None
+        self._done = False
         try:
             self._file = open(filename, 'r')
             header = self._file.readline().strip()
@@ -346,11 +293,10 @@ class InFile(SleepReader):
 
             try:
                 # Convert numbers to integers, and dates/timeis
-                index = int(values[0])
-                date = datetime.datetime.strptime("%s" % values[1], "%m-%d-%Y")
-                time = datetime.datetime.strptime("%s" % values[2], "%H-%M-%S")
+                date = values[0]
+                time = values[1]
+                index = int(values[2])
                 movement_value = int(values[3])
-
 
                 self.last_sleep_entry = SleepEntry(index, movement_value, date, time)
                 return self.last_sleep_entry
@@ -359,23 +305,11 @@ class InFile(SleepReader):
 
 
     @property
-    def data_is_available(self):
+    def is_ready(self):
         return not self._done
 
     def close(self):
         self._file.close()
-
-def get_date_string():
-    """
-    :return: A string representation of the current date as mm-dd-yyyy
-    """
-    return datetime.datetime.now().strftime("%m-%d-%Y")
-
-def get_time_string():
-    """
-    :return: A string representation of the current time as hh-mm-sss
-    """
-    return datetime.datetime.now().strftime("%H-%M-%S")
 
 
 class SleepEntry(object):
@@ -412,10 +346,10 @@ class OutFile(object):
         """
         Creates the logfile, and writes the header row
         """
-        logfile_name = 'logs/%s-%s.slp.csv' % (get_date_string(), get_time_string())
-        log.info("Logging to %s" % logfile_name)
+        self.logfile_name = 'logs/%s-%s.slp.csv' % (get_date_string(), get_time_string())
+        log.info("Logging to %s" % self.logfile_name)
         try:
-            self.logfile = open(logfile_name, 'a')
+            self.logfile = open(self.logfile_name, 'a')
             self.logwriter = csv.writer(self.logfile)
         except Exception as e:
             log.error("Unable to open logfile: %s" % e)
@@ -423,12 +357,83 @@ class OutFile(object):
         # Write CSV header information
         self.logwriter.writerow(SleepEntry.header_names())
 
-        def record_value(self, value):
-            self.logwriter.writerow(value)
+    def write_entry(self, sleep_entry):
+        self.logfile.write(str(sleep_entry) + "\r\n")
 
-        def close(self):
-            self.logfile.close()
+    def close(self):
+        self.logfile.close()
+        log.info("Log saved to %s" % self.logfile_name)
 
+def get_date_string():
+    """
+    :return: A string representation of the current date as mm-dd-yyyy
+    """
+    return datetime.datetime.now().strftime("%m-%d-%Y")
 
-class AnalyzerWithGraph(SleepAnalyzer, LazyGraph):
+def get_time_string():
+    """
+    :return: A string representation of the current time as hh-mm-sss
+    """
+    return datetime.datetime.now().strftime("%H-%M-%S")
+
+def upload_new_logfiles():
+    """
+    Global function which quickly scans for log files which exist locally, but not on the remote fileserver.
+    Any files which meet the criteria are uploaded, then removed locally.
+    """
+    if not CREDENTIALS_PROVIDED:
+        log.warning("Credentials file not found! Can't upload results")
+        return
+
+        # Make sure we're in the right directory
+    if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):
+        log.error("Please cd into the script directory before running it!")
+        sys.exit(1)
+
+    # Setup FTP
+    log.info("Connecting to FTP site")
+    try:
+        ftp = FTP(timeout=5)
+        ftp.connect(REMOTE_IP)
+        log.info("FTP Connected")
+        ftp.login(USER, PASSWD)
+        ftp.cwd('logs')
+
+        sleep_logs = glob.glob('./logs/*.slp.csv')
+        log.info("Found local logfiles: %s" % sleep_logs)
+        for sleep_log in sleep_logs:
+            sleep_log_filename = os.path.basename(sleep_log)
+            if os.stat(sleep_log).st_size < MIN_SIZE_FOR_UPLOAD:
+                log.info("Skipping %s: sleeplog is < %s bytes " % (sleep_log_filename, MIN_SIZE_FOR_UPLOAD))
+                continue
+
+            # Check if file is already on the server
+            files_on_server = []
+            ftp.retrlines('LIST %s' % sleep_log_filename, files_on_server.append)
+            if files_on_server:
+                log.info("Skipping %s: sleeplog is already on server" % sleep_log_filename, MIN_SIZE_FOR_UPLOAD)
+                continue
+
+            # If not, upload it
+            log.info("Uploading %s" % sleep_log_filename)
+            opened_sleep_log = open(sleep_log)
+            transfer_cmd = 'STOR %s' % sleep_log_filename
+            upload_result = ftp.storbinary(transfer_cmd, opened_sleep_log)
+            if upload_result == '226 Transfer complete.':
+                # Successful upload. remove the logfile
+                log.info("Upload successful")
+                os.remove(sleep_log)
+            else:
+                log.warning("Upload unsuccessful")
+
+        ftp.close()
+        log.info("FTP closed")
+    except socket_error:
+        log.warning("FTP Connection refused")
+    except permission_error:
+        log.warning("FTP invalid credentials")
+    except Exception as e:
+        log.error("Unknown ftp error encountered: %s" % e)
+
+class GraphWithAnalyzer(SleepAnalyzer, LazyGraph):
     pass

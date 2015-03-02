@@ -36,7 +36,7 @@ def main():
     try:
         sleep_reader = Teensy()
         logfile = OutFile()
-        graph_with_analyzer = AnalyzerWithGraph()
+        graph_with_analyzer = GraphWithAnalyzer()
 
         try:
             while sleep_reader.is_ready():
@@ -45,7 +45,7 @@ def main():
                     # Got bad value from reader. Move on. Note: Index will still be incremented
                     continue
 
-                logfile.record_value(movement_value)
+                logfile.write_entry(movement_value)
                 graph_with_analyzer.add(movement_value)
                 graph_with_analyzer.show()
 

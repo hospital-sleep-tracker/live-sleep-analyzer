@@ -33,15 +33,17 @@ def main():
         log.error("Please cd into the script directory before running it!")
         sys.exit(1)
 
-    graph_with_analyzer = AnalyzerWithGraph(minimum_value=args.minimum_value,
+    graph_with_analyzer = GraphWithAnalyzer(minimum_value=args.minimum_value,
                                             min_movement_sum=args.minimum_sum)
     sleep_reader = InFile(args.file)
 
-    while sleep_reader.data_is_available:
+    import pdb
+    pdb.set_trace()
+    while sleep_reader.is_ready:
         try:
-            values = sleep_reader.get_values()
+            values = sleep_reader.get_next_sleep_entry()
             if values:
-                graph_with_analyzer.add(values)
+                graph_with_analyzer.add_entry(values)
         except KeyboardInterrupt:
             log.info("Interrupt detected. Quitting")
             sleep_reader.close()

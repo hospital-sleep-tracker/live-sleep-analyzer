@@ -221,9 +221,11 @@ class LazyGraph(SleepEntryStore):
 
 
 class LightSwitch(object):
+    """
+    Static object for turning off and on the Raspberry Pi's indicator LED
+    """
     @staticmethod
     def turn_on():
-        """Turns the light on, ONLY if it is currently off"""
         try:
             with open(LIGHT_FILE, 'w') as f:
                 f.write('1')
@@ -232,7 +234,6 @@ class LightSwitch(object):
 
     @staticmethod
     def turn_off():
-        """Turns the ligh off, ONLY if it is currently on"""
         try:
             with open(LIGHT_FILE, 'w') as f:
                 f.write('0')

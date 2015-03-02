@@ -7,13 +7,7 @@ Use Case: Analyzing data from logfile (after-the-fact analysis)
   x realtime analysis
   - after-the-fact analysis
 """
-DEBUG_ON = True
-TEENSY_VENDOR_ID = 0x16c0
-TEENSY_PRODUCT_ID = 0x0483
-DISPLAY_GRAPH = False
-
-import argparse, os
-import logging as log
+import argparse
 from pysleep import *
 
 

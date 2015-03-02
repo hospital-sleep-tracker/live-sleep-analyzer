@@ -14,9 +14,9 @@ from pysleep import *
 
 def main():
     # Parse command line arguments
-    parser = argparse.ArgumentParser(prog='python sleep-logger.py',
-                                     description='Logs movement information from accelerometer input into logfile',
-                                     usage='python sleep-logger.py [-h]')
+    argparse.ArgumentParser(prog='python sleep-logger.py',
+                            description='Logs movement information from accelerometer input into logfile',
+                            usage='python sleep-logger.py [-h]')
 
     # Check user is in the right directory
     if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):

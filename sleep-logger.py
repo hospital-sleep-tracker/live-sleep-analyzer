@@ -45,12 +45,12 @@ def main():
     while True:
         sleep_reader = None
         logfile = None
-        indicator_led = LightSwitch()
+
         try:
             # Blocking call - won't continue until a Teensy connection has been initiated
             sleep_reader = Teensy()
             logfile = OutFile()
-            indicator_led.turn_on()
+            LightSwitch.turn_on()
 
             while sleep_reader.is_ready():
                 # Read value from accelerometer
@@ -59,22 +59,22 @@ def main():
                 # Handle case where bad value is received from reader
                 if movement_value is None:
                     # Move on. Note: Index will still be incremented
-                    indicator_led.turn_off()
+                    LightSwitch.turn_off()
                     continue
                 else:
-                    indicator_led.turn_on()
+                    LightSwitch.turn_on()
 
                 logfile.record_value(movement_value)
 
         except KeyboardInterrupt:
             log.info("Interrupt detected. Closing logfile and quitting")
             if logfile:
-                logfile.close()
-            indicator_led.turn_off()
+              logfile.close()
+            LightSwitch.turn_off()
             sys.exit(0)
         except serial.SerialException:
             log.info("USB Error. Closing everything")
-            indicator_led.turn_off()
+            LightSwitch.turn_off()
             logfile.close()
         except Exception as e:
             log.error("Encountered unexpected exception: %s" % e)

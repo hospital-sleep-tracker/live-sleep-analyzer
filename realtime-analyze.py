@@ -21,6 +21,7 @@ import numpy
 from matplotlib import pyplot, animation
 from pysleep import *
 
+
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(prog='python realtime-analyze.py',
@@ -33,13 +34,13 @@ def main():
         sys.exit(1)
 
     try:
-        sleep_reader   = Teensy()
-        logfile        = OutFile()
+        sleep_reader = Teensy()
+        logfile = OutFile()
         graph_with_analyzer = AnalyzerWithGraph()
 
         try:
             while sleep_reader.is_ready():
-                movement_value = sleep_reader.get_next_movement_value()
+                movement_value = sleep_reader.get_next_sleep_entry()
                 if movement_value is None:
                     # Got bad value from reader. Move on. Note: Index will still be incremented
                     continue

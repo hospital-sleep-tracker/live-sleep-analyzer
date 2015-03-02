@@ -16,10 +16,15 @@ import argparse, os
 import logging as log
 from pysleep import *
 
+
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(prog='python post-analyze.py',
                                      description='Imports a sleep file and performs after-the-fact data and graphical analysis on it')
+    parser.add_argument('-m', '--minimum-value', type=int,
+                        help='if provided, will print every entry where movement_value > x to stdout')
+    parser.add_argument('-s', '--minimum-sum', type=int,
+                        help='if provided, will print every entry where sum of last n entires > x to stdout')
     parser.add_argument('file', help='target sleepfile to perform analysis on')
     args = parser.parse_args()
 
@@ -28,14 +33,15 @@ def main():
         log.error("Please cd into the script directory before running it!")
         sys.exit(1)
 
-    graph_with_analyzer = AnalyzerWithGraph()
+    graph_with_analyzer = AnalyzerWithGraph(minimum_value=args.minimum_value,
+                                            min_movement_sum=args.minimum_sum)
     sleep_reader = InFile(args.file)
 
     while sleep_reader.data_is_available:
         try:
-            movement_value = sleep_reader.get_next_movement_value()
-            if movement_value:
-                graph_with_analyzer.add(movement_value)
+            values = sleep_reader.get_values()
+            if values:
+                graph_with_analyzer.add(values)
         except KeyboardInterrupt:
             log.info("Interrupt detected. Quitting")
             sleep_reader.close()
@@ -52,6 +58,7 @@ def main():
 
     print 'Press Enter to Quit...'
     raw_input()
+
 
 if __name__ == "__main__":
     main()

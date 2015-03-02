@@ -17,6 +17,7 @@ import logging
 
 from pysleep import *
 
+
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(prog='python sleep-logger.py',
@@ -68,7 +69,7 @@ def main():
         except KeyboardInterrupt:
             log.info("Interrupt detected. Closing logfile and quitting")
             if logfile:
-              logfile.close()
+                logfile.close()
             indicator_led.turn_off()
             sys.exit(0)
         except serial.SerialException:

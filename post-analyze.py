@@ -37,13 +37,11 @@ def main():
                                             min_movement_sum=args.minimum_sum)
     sleep_reader = InFile(args.file)
 
-    import pdb
-    pdb.set_trace()
     while sleep_reader.is_ready:
         try:
-            values = sleep_reader.get_next_sleep_entry()
-            if values:
-                graph_with_analyzer.add_entry(values)
+            sleep_entry = sleep_reader.get_next_sleep_entry()
+            if sleep_entry:
+                graph_with_analyzer.add_entry(sleep_entry)
         except KeyboardInterrupt:
             log.info("Interrupt detected. Quitting")
             sleep_reader.close()

@@ -46,18 +46,66 @@ log.addHandler(ch)
 log.addHandler(fh)
 
 
+class SleepEntry(object):
+    """
+    A simple storage container for the sleep data.
+    Will use current date and time if either is not provided
+    """
+    def __init__(self, index, movement_value, date=None, time=None):
+        if date is None:
+            date = get_date_string()
+
+        if time is None:
+            time = get_time_string()
+
+        self.date = date
+        self.time = time
+        self.index = index
+        self.movement_value = movement_value
+
+    @property
+    def datetime(self):
+        return datetime.datetime.strptime("%s_%s" % (self.date, self.time), "%m-%d-%Y_%H-%M-%S")
+
+    @staticmethod
+    def header_names():
+        return ['Date', 'Time', 'Index', 'Movement Value']
+
+    def __str__(self):
+        return "%s,%s,%s,%s" % (self.date, self.time, self.index, self.movement_value)
+
+
 class SleepEntryStore(object):
+    """
+    Simple class which stores all sleep-entries for a session.
+    Subclasses can hook onto self.add_entry and self.show in order to display graphs and run analysis.
+    """
     def __init__(self, **kwargs):
-        self.values = []
+        self.sleep_entries = []
 
     def add_entry(self, values):
+        """
+        Call this function each time a value needs to be added to the datastore.
+        Subclasses can look at, analyze, display, or modify the value, before or after it is added.
+        Ensure that subclasses call their parents!
+
+        :param values: a filled SleepEntry
+        """
         assert type(values) == SleepEntry, \
             "SleepEntryStore only stores values of type SleepEntries, not: %s" % type(values)
-        self.values.append(values)
+        self.sleep_entries.append(values)
+
+    def show(self):
+        """
+        Call this function once the input has ended (USB disconnection, EOF, etc.)
+        Subclasses can look at all the existing data and perform final analysis on the sleepdata as a whole
+        at this point.
+        """
+        pass
 
     @property
     def num_values_recorded(self):
-        return len(self.values)
+        return len(self.sleep_entries)
 
     # Alias
     @property
@@ -68,41 +116,51 @@ class SleepEntryStore(object):
     def last_recorded_index(self):
         return self.num_values_recorded - 1
 
-    def show(self):
-        pass
-
 
 class SleepAnalyzer(SleepEntryStore):
+    """
+    Subclass of SleepEntryStore which performs data analysis on each entry as it is added to the datastore,
+    as well as post-session analysis.
+    """
+
     MOVEMENT_HISTORY_SIZE = 50
+    """Number of sleepentries to use for the short-term movement analysis. """
+
 
     def __init__(self, min_movement_sum=0, **kwargs):
         super(SleepAnalyzer, self).__init__(**kwargs)
+
         self.min_movement_sum = min_movement_sum
-        """
-        Movement values above this amount will be printed to stdout
-        """
+        """Movement values above this amount will be printed to stdout. Only used for analysis development currently."""
 
         self.max_value = 0
+        """Max value recorded this session. Not very useful, but a simple example of what the SleepAnalyzer can do"""
+
         self.occurrences_of = {}
-        self.bumps = {}
+        """Key-Value store where the Key is the movement_value, and the Value is the number of times it has occured (Mode)"""
+
         self.phase = 0
-        self.last_values = [0] * self.MOVEMENT_HISTORY_SIZE
+        """Current sleep phase."""
+
+        self.last_entries = [0] * self.MOVEMENT_HISTORY_SIZE
+        """Last X movements. Useful for analysis that needs to look at movement over the last few readings.
+        Technically you could draw this from the last X entries of self.sleep_entries, but its simpler to keep it up
+        to date here."""
+
 
     def add_entry(self, sleep_entry):
         """This function is run immediately after the entry has been stored in the SleepEntryStore (parent.__init__).
-        Any analysis to be performed on each entry should be run here.
+        Any analysis to be performed on each entry should be done here."""
 
-        :return: None
-        """
-        # call parent, to add value to SleepEntryStore
+        # Call parent, to add value to SleepEntryStore
         super(SleepAnalyzer, self).add_entry(sleep_entry)
 
-        # We only care about the movement value for analysis
+        # We only care about the movement value for analysis (for now)
         movement_value = sleep_entry.movement_value
 
         # Shift the new movement_value into the last_values
-        self.last_values.append(movement_value)
-        self.last_values.pop(0)
+        self.last_entries.append(movement_value)
+        self.last_entries.pop(0)
 
         # Then run analysis
         if movement_value > self.max_value:
@@ -111,10 +169,10 @@ class SleepAnalyzer(SleepEntryStore):
         if movement_value not in self.occurrences_of.keys():
             self.occurrences_of[movement_value] = 1
         else:
-            self.occurrences_of[movement_value] = 1
+            self.occurrences_of[movement_value] += 1
 
-        if sum(self.last_values) > self.min_movement_sum:
-            print "Analyzed: %s    History Sum: %d" % (sleep_entry, sum(self.last_values))
+        if sum(self.last_entries) > self.min_movement_sum:
+            print "Analyzed: %s    History Sum: %d" % (sleep_entry, sum(self.last_entries))
 
     def show(self):
         """
@@ -125,7 +183,7 @@ class SleepAnalyzer(SleepEntryStore):
         most_occurrences = max(self.occurrences_of)
         log.info("Mode: %s   Occurences: %d" %
                  ([k for k in self.occurrences_of if self.occurrences_of[k] == most_occurrences], most_occurrences))
-        log.info("Mean: %d" % numpy.mean([sleep_entry.movement_value for sleep_entry in self.values]))
+        log.info("Mean: %d" % numpy.mean([sleep_entry.movement_value for sleep_entry in self.sleep_entries]))
 
 
 class Graph(SleepEntryStore):
@@ -133,12 +191,12 @@ class Graph(SleepEntryStore):
         super(Graph, self).__init__(**kwargs)
         pyplot.ion()
         self.ax = pyplot.axes(xlim=(0, 50), ylim=(0, 200))
-        self.line, = self.ax.plot(self.values, lw=2)
+        self.line, = self.ax.plot(self.sleep_entries, lw=2)
 
     def add(self, values):
-        self.values.append(values['Movement Value'])
-        del self.values[0]
-        self.line.set_data(range(0, 50), self.values)
+        self.sleep_entries.append(values['Movement Value'])
+        del self.sleep_entries[0]
+        self.line.set_data(range(0, 50), self.sleep_entries)
         pyplot.draw()
 
     def show(self):
@@ -146,43 +204,28 @@ class Graph(SleepEntryStore):
 
 
 class LazyGraph(SleepEntryStore):
+    """Graph which shows the entire session as a whole.
+    This class doesn't need to hook into add_entry. It simply waits until the final self.show is called
+    to display all the session details on a graph."""
     def __init__(self, **kwargs):
         super(LazyGraph, self).__init__(**kwargs)
         pyplot.ion()
-        self.values = []
+        self.sleep_entries = []
         self.ax = pyplot.axes(xlim=(0, 50), ylim=(0, 250))
-        self.line, = self.ax.plot(self.values, lw=2)
+        self.line, = self.ax.plot(self.sleep_entries, lw=2)
 
     def show(self):
         super(LazyGraph, self).show()
         pyplot.ylim((0, 100))
-        pyplot.xlim((0, len(self.values)))
-        self.line.set_data(range(0, len(self.values)), [value.movement_value for value in self.values])
+        pyplot.xlim((0, len(self.sleep_entries)))
+        self.line.set_data(range(0, len(self.sleep_entries)), [value.movement_value for value in self.sleep_entries])
         pyplot.draw()
 
 
-class LightSwitch(object):
-    """
-    Static object for turning off and on the Raspberry Pi's indicator LED
-    """
-    @staticmethod
-    def turn_on():
-        try:
-            with open(LIGHT_FILE, 'w') as f:
-                f.write('1')
-        except IOError:
-            log.warning("Unable to turn on indicator led")
-
-    @staticmethod
-    def turn_off():
-        try:
-            with open(LIGHT_FILE, 'w') as f:
-                f.write('0')
-        except IOError:
-            log.warning("Unable to turn off indicator led")
-
-
 class SleepReader(object):
+    """
+    Skeleton of what a Sleep Input device should look like.
+    """
     def __init__(self, **kwargs):
         self.next_available_index = 0
 
@@ -303,42 +346,12 @@ class InFile(SleepReader):
             except ValueError:
                 log.error("Malformed sleepfile! Last correct line: %s" % self.last_sleep_entry)
 
-
     @property
     def is_ready(self):
         return not self._done
 
     def close(self):
         self._file.close()
-
-
-class SleepEntry(object):
-    """
-    A simple storage container for the sleep data.
-    Will use current date and time if either is not provided
-    """
-    def __init__(self, index, movement_value, date=None, time=None):
-        if date is None:
-            date = get_date_string()
-
-        if time is None:
-            time = get_time_string()
-
-        self.date = date
-        self.time = time
-        self.index = index
-        self.movement_value = movement_value
-
-    @property
-    def datetime(self):
-        return datetime.datetime.strptime("%s_%s" % (self.date, self.time), "%m-%d-%Y_%H-%M-%S")
-
-    @staticmethod
-    def header_names():
-        return ['Date', 'Time', 'Index', 'Movement Value']
-
-    def __str__(self):
-        return "%s,%s,%s,%s" % (self.date, self.time, self.index, self.movement_value)
 
 
 class OutFile(object):
@@ -363,6 +376,28 @@ class OutFile(object):
     def close(self):
         self.logfile.close()
         log.info("Log saved to %s" % self.logfile_name)
+
+
+class LightSwitch(object):
+    """
+    Static object for turning off and on the Raspberry Pi's indicator LED
+    """
+    @staticmethod
+    def turn_on():
+        try:
+            with open(LIGHT_FILE, 'w') as f:
+                f.write('1')
+        except IOError:
+            log.warning("Unable to turn on indicator led")
+
+    @staticmethod
+    def turn_off():
+        try:
+            with open(LIGHT_FILE, 'w') as f:
+                f.write('0')
+        except IOError:
+            log.warning("Unable to turn off indicator led")
+
 
 def get_date_string():
     """

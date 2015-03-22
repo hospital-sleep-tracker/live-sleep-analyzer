@@ -1,50 +1,17 @@
 """
 Shared library of classes for sleep logging, analyzing, and graphing
 """
-import time
 import sys
 import glob
 import os
 import csv
 import datetime
 import serial
-from ftplib import FTP, error_perm as permission_error
-import logging
-import logging.handlers
 import numpy
+from sklearn import linear_model
+from pysleeplogging import log
 
-from matplotlib import pyplot
-from socket import error as socket_error
-
-CREDENTIALS_PROVIDED = True
-try:
-    from credentials import REMOTE_IP, USER, PASSWD
-except ImportError:
-    CREDENTIALS_PROVIDED = False
-
-MIN_SIZE_FOR_UPLOAD = 1000000
 LIGHT_FILE = '/sys/class/leds/led0/brightness'
-
-log = logging.getLogger('sleep-logger')
-log.setLevel(logging.DEBUG)
-
-# Create File logger
-fh = logging.FileHandler('sleeplogger.log')
-fh.setLevel(logging.INFO)
-
-# Create Console Logger
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-
-# Set Formatter
-formatter = logging.Formatter('%(asctime)s [%(levelname)s]: %(message)s')
-ch.setFormatter(formatter)
-fh.setFormatter(formatter)
-
-# Add handlers
-log.addHandler(ch)
-log.addHandler(fh)
-
 
 class SleepEntry(object):
     """
@@ -58,20 +25,67 @@ class SleepEntry(object):
         if time is None:
             time = get_time_string()
 
-        self.date = date
-        self.time = time
         self.index = index
+        """Integer index representing which reading this was starting from 0"""
+
         self.movement_value = movement_value
+        """Integer > 0 representing how much movement was recorded by the accelerometer"""
+
+        self.date = date
+        """String representing the date the sleep_entry was taken, in MM-DD-YYYY format.
+        Note: since most sleep tracking is done overnight (duh), the logfile will usually have 2 days
+        of date strings."""
+
+        self.time = time
+        """String representing the time the sleep_entry was taken in HH-MM-SS format (24 hour clock)"""
+
+    @staticmethod
+    def copy(sleep_entry, index=None, movement_value=None, date=None, time=None):
+        """
+        Constructor that returns a copy of the passed in sleep_entry, but with fields replaced
+        with the input arguments.
+
+        USAGE:
+        original_entry = SleepEntry(index=0, movement_value=1)
+        copy_entry = SleepEntry.copy(original_entry, movement_value=1000)
+
+        RESULTS:
+        print original_entry
+        > "03-06-2015,18-22-09,0,1"
+        print copy_entry
+        > "03-06-2015,18-22-09,0,1000"
+        """
+        assert type(sleep_entry) == SleepEntry, "first argument must be a SleepEntry"
+        return SleepEntry(index=index or sleep_entry.index,
+                          movement_value=movement_value or sleep_entry.movement_value,
+                          date=date or sleep_entry.date,
+                          time=time or sleep_entry.time)
 
     @property
     def datetime(self):
+        """
+        Combines the stored date and time of this sleep_entry into a datetime object.
+        This is useful for time comparisons.
+
+        USAGE:
+        if sleep_entry1.datetime > sleep_entry2.datetime:
+            print 'sleep_entry1 happened before sleep_entry2'
+        """
         return datetime.datetime.strptime("%s_%s" % (self.date, self.time), "%m-%d-%Y_%H-%M-%S")
 
     @staticmethod
     def header_names():
+        """
+        Prints the currently supported headers for a correctly formatted CSV logfile.
+        This isn't used much besides for debugging, and for ensuring that logfiles read in
+        have the same csv header as this expected one.
+        """
         return ['Date', 'Time', 'Index', 'Movement Value']
 
     def __str__(self):
+        """
+        Override the string method so printing a sleep_entry looks pretty click
+        """
         return "%s,%s,%s,%s" % (self.date, self.time, self.index, self.movement_value)
 
 
@@ -83,17 +97,19 @@ class SleepEntryStore(object):
     def __init__(self, **kwargs):
         self.sleep_entries = []
 
-    def add_entry(self, values):
+    def add_entry(self, sleep_entry):
         """
-        Call this function each time a value needs to be added to the datastore.
-        Subclasses can look at, analyze, display, or modify the value, before or after it is added.
+        Adds a sleep entry to the SleepEntryStore.
+        Subclasses can look at, analyze, display, or modify (not suggested) the sleep entry,
+        before or after it is added.
+
         Ensure that subclasses call their parents!
 
-        :param values: a filled SleepEntry
+        :param sleep_entry: a filled SleepEntry
         """
-        assert type(values) == SleepEntry, \
-            "SleepEntryStore only stores values of type SleepEntries, not: %s" % type(values)
-        self.sleep_entries.append(values)
+        assert type(sleep_entry) == SleepEntry, \
+            "SleepEntryStore only stores values of type SleepEntries, not: %s" % type(sleep_entry)
+        self.sleep_entries.append(sleep_entry)
 
     def show(self):
         """
@@ -107,13 +123,13 @@ class SleepEntryStore(object):
     def num_values_recorded(self):
         return len(self.sleep_entries)
 
-    # Alias
     @property
     def next_available_index(self):
         return self.num_values_recorded
 
     @property
     def last_recorded_index(self):
+        """Returns the index of the last recorded value"""
         return self.num_values_recorded - 1
 
 
@@ -126,27 +142,36 @@ class SleepAnalyzer(SleepEntryStore):
     MOVEMENT_HISTORY_SIZE = 50
     """Number of sleepentries to use for the short-term movement analysis. """
 
-
-    def __init__(self, min_movement_sum=0, **kwargs):
+    def __init__(self, min_movement_sum=0, min_movement_value=0, **kwargs):
         super(SleepAnalyzer, self).__init__(**kwargs)
 
         self.min_movement_sum = min_movement_sum
         """Movement values above this amount will be printed to stdout. Only used for analysis development currently."""
 
+        self.min_movement_value = min_movement_value
+
         self.max_value = 0
         """Max value recorded this session. Not very useful, but a simple example of what the SleepAnalyzer can do"""
 
         self.occurrences_of = {}
-        """Key-Value store where the Key is the movement_value, and the Value is the number of times it has occured (Mode)"""
+        """Key-Value store where the Key is the movement_value,
+        and the Value is the number of times it has occurred (Mode)"""
 
         self.phase = 0
         """Current sleep phase."""
 
-        self.last_entries = [0] * self.MOVEMENT_HISTORY_SIZE
+        self.movement_coefficients = []
+
+        self.last_entries = []
         """Last X movements. Useful for analysis that needs to look at movement over the last few readings.
         Technically you could draw this from the last X entries of self.sleep_entries, but its simpler to keep it up
         to date here."""
 
+        self.big_movement_entries = []
+
+        self.last_movement_sums = []
+
+        self.last_movement_sum_coefficients = []
 
     def add_entry(self, sleep_entry):
         """This function is run immediately after the entry has been stored in the SleepEntryStore (parent.__init__).
@@ -155,28 +180,47 @@ class SleepAnalyzer(SleepEntryStore):
         # Call parent, to add value to SleepEntryStore
         super(SleepAnalyzer, self).add_entry(sleep_entry)
 
-        # We only care about the movement value for analysis (for now)
-        movement_value = sleep_entry.movement_value
+        # Add to big_movement_entries
+        if sleep_entry.movement_value > self.min_movement_value:
+            self.big_movement_entries.append(sleep_entry)
 
         # Shift the new movement_value into the last_values
-        self.last_entries.append(movement_value)
-        self.last_entries.pop(0)
+        self.last_entries.append(sleep_entry)
+        if len(self.last_entries) > self.MOVEMENT_HISTORY_SIZE:
+            self.last_entries.pop(0)
 
-        # Then run analysis
+        # Shift the new sum into last_movement_sums
+        self.last_movement_sums.append(sum([x.movement_value for x in self.last_entries]))
+        if len(self.last_movement_sums) > self.MOVEMENT_HISTORY_SIZE:
+            self.last_movement_sums.pop(0)
+
+        # Compare to max
+        movement_value = sleep_entry.movement_value
         if movement_value > self.max_value:
             self.max_value = movement_value
 
+        # Adjust self.occurances_of
         if movement_value not in self.occurrences_of.keys():
             self.occurrences_of[movement_value] = 1
         else:
             self.occurrences_of[movement_value] += 1
 
-        if sum(self.last_entries) > self.min_movement_sum:
-            print "Analyzed: %s    History Sum: %d" % (sleep_entry, sum(self.last_entries))
+        x_values = [[x.index] for x in self.last_entries]
+        y_values = [[y.movement_value] for y in self.last_entries]
+        # movement_values = [[y.movement_value] for y in self.last_entries]
+        regr = linear_model.LinearRegression()
+        regr.fit(x_values, y_values)
+        self.movement_coefficients.append(regr.coef_[0][0])
+        self.last_movement_sum_coefficients.append(regr.coef_[0][0])
+        if len(self.last_movement_sum_coefficients) > self.MOVEMENT_HISTORY_SIZE:
+            self.last_movement_sum_coefficients.pop(0)
+
+        # if sum([x.movement_value for x in self.last_entries]) > self.min_movement_sum:
+        #     print "Analyzed: %s    History Sum: %d" % (sleep_entry, sum(self.last_entries))
 
     def show(self):
         """
-        Prints analysis information drawn from the session up until this point.
+        Prints analysis information from the session up until this point.
         """
         super(SleepAnalyzer, self).show()
         log.info("Max: %d" % self.max_value)
@@ -186,45 +230,10 @@ class SleepAnalyzer(SleepEntryStore):
         log.info("Mean: %d" % numpy.mean([sleep_entry.movement_value for sleep_entry in self.sleep_entries]))
 
 
-class Graph(SleepEntryStore):
-    def __init__(self, **kwargs):
-        super(Graph, self).__init__(**kwargs)
-        pyplot.ion()
-        self.ax = pyplot.axes(xlim=(0, 50), ylim=(0, 200))
-        self.line, = self.ax.plot(self.sleep_entries, lw=2)
-
-    def add(self, values):
-        self.sleep_entries.append(values['Movement Value'])
-        del self.sleep_entries[0]
-        self.line.set_data(range(0, 50), self.sleep_entries)
-        pyplot.draw()
-
-    def show(self):
-        super(Graph, self).show()
-
-
-class LazyGraph(SleepEntryStore):
-    """Graph which shows the entire session as a whole.
-    This class doesn't need to hook into add_entry. It simply waits until the final self.show is called
-    to display all the session details on a graph."""
-    def __init__(self, **kwargs):
-        super(LazyGraph, self).__init__(**kwargs)
-        pyplot.ion()
-        self.sleep_entries = []
-        self.ax = pyplot.axes(xlim=(0, 50), ylim=(0, 250))
-        self.line, = self.ax.plot(self.sleep_entries, lw=2)
-
-    def show(self):
-        super(LazyGraph, self).show()
-        pyplot.ylim((0, 100))
-        pyplot.xlim((0, len(self.sleep_entries)))
-        self.line.set_data(range(0, len(self.sleep_entries)), [value.movement_value for value in self.sleep_entries])
-        pyplot.draw()
-
-
 class SleepReader(object):
     """
-    Skeleton of what a Sleep Input device should look like.
+    Base class for input devices. Subclasses should implement the get_next_sleep_entry method, and is_ready.
+    All methods should call parent to keep sleep index updated.
     """
     def __init__(self, **kwargs):
         self.next_available_index = 0
@@ -232,8 +241,9 @@ class SleepReader(object):
     def get_next_sleep_entry(self):
         self.next_available_index += 1
 
+    @property
     def is_ready(self):
-        raise NotImplementedError()
+        pass
 
 
 class Teensy(SleepReader):
@@ -247,12 +257,12 @@ class Teensy(SleepReader):
             self.teensy = self._get_teensy_usb()
 
     def _get_teensy_usb(self):
-        """Searches, opens, and returns a serial port object connected to the teensy
+        """Searches, opens, and returns a serial port object connected to the Teensy.
 
         :raises EnvironmentError:
             On unsupported or unknown platforms
         :returns:
-            An initialized serial object (hopefully) connected to the teensy
+            An initialized serial object (hopefully) connected to the Teensy
         """
         if sys.platform.startswith('win'):
             log.debug("Using windows system.")
@@ -275,7 +285,6 @@ class Teensy(SleepReader):
             log.debug("Found available port: %s" % port)
 
         # Method 1: Match via ready-to-read serial ports
-        ready_usb_devices = []
         for port in ports:
             log.debug("Checking: %s" % port)
             try:
@@ -302,7 +311,7 @@ class Teensy(SleepReader):
         log.info("Read movement value: %d" % movement_value)
         return SleepEntry(self.next_available_index, movement_value)
 
-
+    @property
     def is_ready(self):
         return self.teensy.isOpen()
 
@@ -332,19 +341,19 @@ class InFile(SleepReader):
         else:
             values = line.strip().split(",")
             assert len(values) == len(SleepEntry.header_names()), \
-                "Malformed sleepfile! Last correct line: %s" % self.last_sleep_entry
+                "Malformed sleepfile: %s    Last correct line: %s" % (values, self.last_sleep_entry)
 
             try:
                 # Convert numbers to integers, and dates/timeis
-                date = values[0]
-                time = values[1]
-                index = int(values[2])
+                date = values[1]
+                time = values[2]
+                index = int(values[0])
                 movement_value = int(values[3])
 
                 self.last_sleep_entry = SleepEntry(index, movement_value, date, time)
                 return self.last_sleep_entry
             except ValueError:
-                log.error("Malformed sleepfile! Last correct line: %s" % self.last_sleep_entry)
+                log.error("Malformed sleepfile: %s    Last correct line: %s" % (values, self.last_sleep_entry))
 
     @property
     def is_ready(self):
@@ -379,8 +388,11 @@ class OutFile(object):
 
 
 class LightSwitch(object):
-    """
-    Static object for turning off and on the Raspberry Pi's indicator LED
+    """Static object for turning off and on the Raspberry Pi's indicator LED.
+
+    Usage:
+    LightSwitch.turn_on()
+    LightSwitch.turn_off()
     """
     @staticmethod
     def turn_on():
@@ -405,70 +417,15 @@ def get_date_string():
     """
     return datetime.datetime.now().strftime("%m-%d-%Y")
 
+
 def get_time_string():
     """
     :return: A string representation of the current time as hh-mm-sss
     """
     return datetime.datetime.now().strftime("%H-%M-%S")
 
-def upload_new_logfiles():
-    """
-    Global function which quickly scans for log files which exist locally, but not on the remote fileserver.
-    Any files which meet the criteria are uploaded, then removed locally.
-    """
-    if not CREDENTIALS_PROVIDED:
-        log.warning("Credentials file not found! Can't upload results")
-        return
 
-        # Make sure we're in the right directory
-    if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):
-        log.error("Please cd into the script directory before running it!")
+def check_correct_run_dir():
+    if os.getcwd()[-20:] != '/live-sleep-analyzer':
+        log.error("Please cd into the project directory before running any scripts!")
         sys.exit(1)
-
-    # Setup FTP
-    log.info("Connecting to FTP site")
-    try:
-        ftp = FTP(timeout=5)
-        ftp.connect(REMOTE_IP)
-        log.info("FTP Connected")
-        ftp.login(USER, PASSWD)
-        ftp.cwd('logs')
-
-        sleep_logs = glob.glob('./logs/*.slp.csv')
-        log.info("Found local logfiles: %s" % sleep_logs)
-        for sleep_log in sleep_logs:
-            sleep_log_filename = os.path.basename(sleep_log)
-            if os.stat(sleep_log).st_size < MIN_SIZE_FOR_UPLOAD:
-                log.info("Skipping %s: sleeplog is < %s bytes " % (sleep_log_filename, MIN_SIZE_FOR_UPLOAD))
-                continue
-
-            # Check if file is already on the server
-            files_on_server = []
-            ftp.retrlines('LIST %s' % sleep_log_filename, files_on_server.append)
-            if files_on_server:
-                log.info("Skipping %s: sleeplog is already on server" % sleep_log_filename, MIN_SIZE_FOR_UPLOAD)
-                continue
-
-            # If not, upload it
-            log.info("Uploading %s" % sleep_log_filename)
-            opened_sleep_log = open(sleep_log)
-            transfer_cmd = 'STOR %s' % sleep_log_filename
-            upload_result = ftp.storbinary(transfer_cmd, opened_sleep_log)
-            if upload_result == '226 Transfer complete.':
-                # Successful upload. remove the logfile
-                log.info("Upload successful")
-                os.remove(sleep_log)
-            else:
-                log.warning("Upload unsuccessful")
-
-        ftp.close()
-        log.info("FTP closed")
-    except socket_error:
-        log.warning("FTP Connection refused")
-    except permission_error:
-        log.warning("FTP invalid credentials")
-    except Exception as e:
-        log.error("Unknown ftp error encountered: %s" % e)
-
-class GraphWithAnalyzer(SleepAnalyzer, LazyGraph):
-    pass

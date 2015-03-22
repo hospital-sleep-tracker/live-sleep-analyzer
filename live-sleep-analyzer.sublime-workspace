@@ -1,0 +1,817 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"begin",
+				"begin	begin … rescue … end"
+			],
+			[
+				"socket",
+				"socket_error"
+			],
+			[
+				"sleep_",
+				"sleep_logfile_name〔variable〕"
+			],
+			[
+				"sleep_l",
+				"sleep_logfile_name"
+			],
+			[
+				"movement",
+				"movement_value〔variable〕"
+			],
+			[
+				"indicator",
+				"indicator_led〔variable〕"
+			],
+			[
+				"turn",
+				"turn_on〔function〕"
+			],
+			[
+				"indicat",
+				"indicator_led〔variable〕"
+			],
+			[
+				"Key",
+				"KeyboardInterrupt〔class〕"
+			],
+			[
+				"movemen",
+				"movement_value"
+			],
+			[
+				"displa",
+				"display_init〔function〕"
+			],
+			[
+				"TEEN",
+				"TEENSY_PRODUCT_ID〔variable〕"
+			],
+			[
+				"TEE",
+				"TEENSY_VENDOR_ID"
+			],
+			[
+				"available",
+				"available_usb_ports"
+			],
+			[
+				"availab",
+				"available_usb_ports〔argument〕"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 147.0,
+		"selected_items":
+		[
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"synt rub",
+				"Set Syntax: Ruby"
+			],
+			[
+				"syntax pyth",
+				"Set Syntax: Python"
+			],
+			[
+				"list pac",
+				"Package Control: List Packages"
+			],
+			[
+				"syntax c++",
+				"Set Syntax: C++"
+			],
+			[
+				"remove pa",
+				"Package Control: Remove Package"
+			],
+			[
+				"install ",
+				"Package Control: Install Package"
+			],
+			[
+				"list ",
+				"Package Control: List Packages"
+			],
+			[
+				"package remove",
+				"Package Control: Remove Package"
+			],
+			[
+				"package",
+				"Package Control: List Packages"
+			],
+			[
+				"python",
+				"Set Syntax: Python"
+			]
+		],
+		"width": 476.0
+	},
+	"console":
+	{
+		"height": 139.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '2deb499853c4371624f5a07e27c334aa' + 'bf8c4e67d14fb0525ba4f89698a6d7e1'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/Users/dano/Projects/live-sleep-analyzer"
+	],
+	"file_history":
+	[
+		"/Users/dano/Projects/live-sleep-analyzer/post-analyze.py",
+		"/Users/dano/Projects/live-sleep-analyzer/pysleep.py",
+		"/Users/dano/Projects/cappy/backend/app/cappy/services.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/services/upnp.rb",
+		"/Users/dano/Projects/cappy/backend/db/migrate/20150129184715_update_state_type.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/services/upnp_new.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/services/simple_thread.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/services/states.rb",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/models/device_spec.rb",
+		"/Users/dano/Projects/cappy/backend/Gemfile",
+		"/Users/dano/Projects/cappy/backend/app/cappy/services/cloud_service.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/services/gunlock.rb",
+		"/Users/dano/Projects/cappy/backend/.gitignore",
+		"/Users/dano/Projects/cappy/backend/app/cappy/services/upnp_new",
+		"/Users/dano/Projects/cappy/backend/app/cappy/services/broadcast.rb",
+		"/Users/dano/Projects/cappy/backend/db/migrate/20150129185229_add_unit_to_devices.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/services/devices.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/services/base.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/services/schedules.rb",
+		"/Users/dano/Projects/cappy/backend/Gemfile.lock",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/README.md",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/post-analyze.py",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/accelerometer.ino",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/initialize_sleeptracker.sh",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/pysleep.py",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/logs/.gitkeep",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/sleep-logger.py",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/credentials.py",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/sample_credentials.py",
+		"/Users/dano/Projects/cappy/auth/app/auth/controllers/control_servers.rb",
+		"/Users/dano/Projects/cappy/auth/app/auth/controllers/users.rb",
+		"/Users/dano/Projects/cappy/auth/app/auth/controllers/sessions.rb",
+		"/Users/dano/Projects/cappy/auth/app/auth/services/control_servers.rb",
+		"/Users/dano/Projects/cappy/auth/app/auth/controllers/base.rb",
+		"/Users/dano/Projects/cappy/auth/app/auth/controllers.rb",
+		"/Users/dano/Projects/cappy/auth/config.ru",
+		"/Users/dano/Projects/cappy/auth/app/auth/services.rb",
+		"/Users/dano/Projects/cappy/auth/app/auth/models.rb",
+		"/Users/dano/Projects/cappy/auth/app/auth/errors.rb",
+		"/Users/dano/Projects/cappy/auth/app/auth.rb",
+		"/Users/dano/Projects/cappy/auth/app/auth/services/base.rb",
+		"/Users/dano/Projects/cappy/auth/db/seeds.rb",
+		"/Users/dano/Projects/cappy/auth/db/schema.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/controllers/version.rb",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/controllers/version_spec.rb",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/controllers/states_spec.rb",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/controllers/schedules_spec.rb",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/controllers/devices_spec.rb",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/controllers/broadcast_spec.rb",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/services/states_spec.rb",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/services/schedules_spec.rb",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/services/devices_spec.rb",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/services/broadcast_spec.rb",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/models/state_spec.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/controllers/states.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/controllers/schedules.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/controllers/devices.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/controllers/broadcast.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/models/state.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/models/schedule.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/models/device.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/controllers.rb",
+		"/Users/dano/Projects/cappy/backend/spec/spec_helper.rb",
+		"/Users/dano/Projects/cappy/backend/README.md",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/upload.py",
+		"/Users/dano/Library/Application Support/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/realtime-analyze.py",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/.gitignore",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/pysleep",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/main.py",
+		"/Users/dano/Library/Application Support/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/run.sh",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/logs/02012015_161306.slp.csv",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/logs/02012015_161241.slp.csv",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/logs/02012015_161318.slp.csv",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/logs/02012015_161238.slp.csv",
+		"/Users/dano/Downloads/enablingEngineeringArduino.ino",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/logs/02012015_161108.slp.csv",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/logs/02012015_155649.slp.csv",
+		"/Users/dano/Projects/hospital-sleep-tracker/live-sleep-analyzer/sleep_tracker",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/models/user_spec.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/models/user.rb",
+		"/Users/dano/Library/Application Support/Sublime Text 3/Packages/TrailingSpaces/trailing_spaces.sublime-settings",
+		"/Users/dano/Library/Application Support/Sublime Text 3/Packages/User/trailing_spaces.sublime-settings",
+		"/Users/dano/Projects/cappy/backend/app/cappy.rb",
+		"/Users/dano/Projects/cappy/backend/db/migrate/20150129032442_create_users.rb",
+		"/Users/dano/Projects/cappy/backend/db/migrate/20150125183018_create_devices.rb",
+		"/Users/dano/Projects/cappy/backend/db/development.sqlite3",
+		"/Users/dano/Projects/cappy/backend/db/migrate/20150125211219_create_states.rb",
+		"/Users/dano/Projects/cappy/backend/.rubocop.yml",
+		"/Users/dano/Projects/cappy/backend/db/migrate/20150124173216_create_locks.rb",
+		"/Users/dano/Projects/cappy/backend/db/migrate/20150129184715_update_status_type.rb",
+		"/Users/dano/Projects/cappy/backend/config/database.yml",
+		"/Users/dano/Projects/cappy/backend/db/migrate/20150125165223_delete_locks.rb",
+		"/Users/dano/Projects/cappy/backend/app/cappy/models.rb",
+		"/Users/dano/Projects/cappy/backend/spec/app/cappy/models/untitled",
+		"/Users/dano/Projects/cappy/backend/db/schema.rb",
+		"/Users/dano/Projects/cappy/backend/Rakefile",
+		"/Users/dano/Documents/SD Card Backup/README.txt",
+		"/Users/dano/Documents/origin_codes",
+		"/Users/dano/Projects/python/main.py",
+		"/Users/dano/Downloads/Pixelmator 3.3 Multilingual MacOSX Retail-CORE [ATOM]/ATOM.Install.Notes.Readme.txt",
+		"/Users/dano/Desktop/removexboxdriver.sh"
+	],
+	"find":
+	{
+		"height": 35.0
+	},
+	"find_in_files":
+	{
+		"height": 93.0,
+		"where_history":
+		[
+			"",
+			"SleepEntryStore",
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"add_entry",
+			"DataStore",
+			"Problem in UPnP",
+			"Log.",
+			"Log",
+			"SimpleThread",
+			"thread",
+			"simple_thread",
+			"1.2.0",
+			"class analyz",
+			"min_value",
+			"GraphWithAnaly",
+			"graph_with",
+			"self.data",
+			"analyzer.num",
+			"class Graph",
+			"Loaded",
+			"unexpected",
+			"Unexpect",
+			"      return self.num_values_recorded - 1",
+			"self.data",
+			"permission_error",
+			"hospital-sleep-tracker",
+			"pdb",
+			"DIGITAL_OCEAN",
+			"logging",
+			"debug(",
+			"log.debug",
+			"ftp closed",
+			"info(",
+			"logger",
+			"pdb",
+			"logfile",
+			"ftp",
+			"parse_json",
+			"prase_json",
+			"parse_json",
+			"malformed",
+			"uuid",
+			"DIGITAL_OCEAN_IP = '104.131.0.132'\nUSER = 'logfiler'\nPASSWD = 'itracksl33p'",
+			"indicator",
+			"graph",
+			"Graph",
+			"graph",
+			"indica",
+			"analyzer.",
+			"analyzer",
+			"logwriter",
+			"is_ready",
+			"def is_ready",
+			"is_ready",
+			"logging to",
+			"is_ready",
+			"args.",
+			"Dummy",
+			"except",
+			"pdb",
+			"import pdb",
+			"class in",
+			"class inpu",
+			"args.filename",
+			"pyplot",
+			"long-term",
+			"short-term",
+			"done reading",
+			"Graph(",
+			"self.ax",
+			"Lazygraph",
+			"pdb",
+			"pdb.",
+			"get_next",
+			"get_net",
+			"read",
+			"pdb",
+			"graph",
+			"draw",
+			"Infile",
+			"lightswitch",
+			"status",
+			"teensy",
+			"closing logfile",
+			"readline",
+			"read(",
+			"teensy",
+			"pdb.set",
+			"get_teensy",
+			"available",
+			"pdb",
+			"ydata",
+			"serial.serial",
+			"pdb",
+			"timeout",
+			"read(",
+			"display_init",
+			"display_init(",
+			"tiny",
+			"serial",
+			"numpy",
+			"np",
+			"np.",
+			"line.set",
+			"Graph",
+			"graph",
+			"GRAPH",
+			"plt.",
+			"animate",
+			"bruins",
+			"root",
+			"logging",
+			"serial_ports",
+			"log",
+			"available_usb_",
+			"pry",
+			"hash",
+			"password",
+			"Password",
+			"name",
+			"~>",
+			"Hello",
+			"chiosa",
+			"contains_value",
+			"this"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"SleepEntryStore",
+			"REMOTE"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"folders":
+	[
+		{
+			"follow_symlinks": true,
+			"path": "/Users/dano/Projects/live-sleep-analyzer"
+		}
+	],
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 25.0
+	},
+	"input":
+	{
+		"height": 33.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 112.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"project": "",
+	"replace":
+	{
+		"height": 46.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+			[
+				"pyslee",
+				"pysleep.py"
+			],
+			[
+				"post-ana",
+				"post-analyze.py"
+			],
+			[
+				"upnp.rb",
+				"app/cappy/services/upnp.rb"
+			],
+			[
+				"services.rb",
+				"app/cappy/services.rb"
+			],
+			[
+				"upnp",
+				"app/cappy/services/upnp_new.rb"
+			],
+			[
+				"simple",
+				"app/cappy/services/simple_thread.rb"
+			],
+			[
+				"simple_thread",
+				"app/cappy/services/simple_thread.rb"
+			],
+			[
+				"gemfile",
+				"Gemfile"
+			],
+			[
+				"upnpnew",
+				"app/cappy/services/upnp_new.rb"
+			],
+			[
+				"service/clou",
+				"app/cappy/services/cloud_service.rb"
+			],
+			[
+				"services/",
+				"app/cappy/services/devices.rb"
+			],
+			[
+				"services",
+				"app/cappy/services/states.rb"
+			],
+			[
+				"gemfile.lock",
+				"Gemfile.lock"
+			],
+			[
+				"service.r",
+				"app/cappy/services.rb"
+			],
+			[
+				"service/",
+				"app/cappy/services/broadcast.rb"
+			],
+			[
+				"pysl",
+				"pysleep.py"
+			],
+			[
+				"logg",
+				"sleep-logger.py"
+			],
+			[
+				"realtime",
+				"realtime-analyze.py"
+			],
+			[
+				"analyze",
+				"post-analyze.py"
+			],
+			[
+				"analy",
+				"post-analyze.py"
+			],
+			[
+				"pysleep",
+				"pysleep.py"
+			],
+			[
+				"initialize",
+				"initialize_sleeptracker.sh"
+			],
+			[
+				"pysle",
+				"pysleep.py"
+			],
+			[
+				"initia",
+				"initialize_sleeptracker.sh"
+			],
+			[
+				"readme",
+				"README.md"
+			],
+			[
+				"sleeplo",
+				"sleep-logger.py"
+			],
+			[
+				"crede",
+				"credentials.py"
+			],
+			[
+				"sample",
+				"sample_credentials.py"
+			],
+			[
+				"credentia",
+				"credentials.py"
+			],
+			[
+				"cre",
+				"credentials.py"
+			],
+			[
+				"logger",
+				"sleep-logger.py"
+			],
+			[
+				"controllers/con",
+				"app/auth/controllers/control_servers.rb"
+			],
+			[
+				"controllers/",
+				"app/auth/controllers/users.rb"
+			],
+			[
+				"app/",
+				"app/auth/controllers/base.rb"
+			],
+			[
+				"version",
+				"app/cappy/controllers/version.rb"
+			],
+			[
+				"base",
+				"app/cappy/controllers/base.rb"
+			],
+			[
+				"cappy.rb",
+				"app/cappy.rb"
+			],
+			[
+				"credenti",
+				"credentials.py"
+			],
+			[
+				"sleep",
+				"pysleep.py"
+			],
+			[
+				"sleep-l",
+				"sleep-logger.py"
+			],
+			[
+				"pyslepe",
+				"pysleep.py"
+			],
+			[
+				"sleeplog",
+				"sleep-logger.py"
+			],
+			[
+				"",
+				"realtime-analyze.py"
+			],
+			[
+				".py",
+				"realtime-analyze.py"
+			],
+			[
+				"post",
+				"post-analyze.py"
+			],
+			[
+				"main",
+				"main.py"
+			],
+			[
+				"m",
+				"main.py"
+			],
+			[
+				"accelerometer.ino",
+				"accelerometer.ino"
+			],
+			[
+				"main.",
+				"main.py"
+			],
+			[
+				".sh",
+				"run.sh"
+			],
+			[
+				"main.py",
+				"main.py"
+			],
+			[
+				"run.sh",
+				"run.sh"
+			],
+			[
+				"gitig",
+				".gitignore"
+			],
+			[
+				"log/",
+				"logs/02012015_161306.slp.csv"
+			],
+			[
+				"log",
+				"logs/02012015_161238.slp.csv"
+			],
+			[
+				"main.p",
+				"main.py"
+			],
+			[
+				"user",
+				"app/cappy/models/user.rb"
+			],
+			[
+				"user_spec",
+				"spec/app/cappy/models/user_spec.rb"
+			],
+			[
+				"create_user",
+				"db/migrate/20150129032442_create_users.rb"
+			],
+			[
+				"user.rb",
+				"app/cappy/models/user.rb"
+			],
+			[
+				"cappy",
+				"app/cappy.rb"
+			],
+			[
+				"createuser",
+				"db/migrate/20150129032442_create_users.rb"
+			],
+			[
+				"add_unit",
+				"db/migrate/20150129185229_add_unit_to_devices.rb"
+			],
+			[
+				"update",
+				"db/migrate/20150129184715_update_state_type.rb"
+			],
+			[
+				"dbmigruser",
+				"db/migrate/20150129032442_create_users.rb"
+			],
+			[
+				"add_un",
+				"db/migrate/20150129185229_add_unit_to_devices.rb"
+			],
+			[
+				"create_state",
+				"db/migrate/20150125211219_create_states.rb"
+			],
+			[
+				"state",
+				"db/migrate/20150129184715_update_status_type.rb"
+			],
+			[
+				"create_de",
+				"db/migrate/20150125183018_create_devices.rb"
+			],
+			[
+				"status",
+				"db/migrate/20150129184715_update_status_value.rb"
+			],
+			[
+				"migrate",
+				"db/migrate/20150129032442_create_users.rb"
+			],
+			[
+				"model.rb",
+				"app/cappy/models.rb"
+			],
+			[
+				"cappy.r",
+				"app/cappy.rb"
+			],
+			[
+				"spec",
+				"spec/app/cappy/models/device_spec.rb"
+			],
+			[
+				"createusers",
+				"db/migrate/20150129032442_create_users.rb"
+			],
+			[
+				"state.rb",
+				"app/cappy/models/state.rb"
+			],
+			[
+				"db/create",
+				"db/migrate/20150125211219_create_states.rb"
+			],
+			[
+				"create_u",
+				"db/migrate/20150129032442_create_users.rb"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"selected_items":
+		[
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 392.0,
+		"selected_items":
+		[
+		],
+		"width": 392.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": false,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": false,
+	"side_bar_width": 50.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

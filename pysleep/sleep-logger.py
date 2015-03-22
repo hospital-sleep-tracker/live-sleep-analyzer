@@ -8,8 +8,13 @@ Use Case: Logging sleep using only Pi<->Teensy (data collection)
   x after-the-fact analysis
 """
 import argparse
-
-from pysleep import *
+import sys
+import serial
+import os
+import pdb
+pdb.set_trace()
+from pysleep.utils import check_correct_run_dir, log, upload_new_logfiles, \
+    LightSwitch, Teensy, OutFile
 
 
 def main():
@@ -19,16 +24,15 @@ def main():
                             usage='python sleep-logger.py [-h]')
 
     # Check user is in the right directory
-    if (os.getcwd() != os.path.dirname(os.path.realpath(__file__))):
-        log.error("Please cd into the script directory before running it!")
-        sys.exit(1)
+    check_correct_run_dir()
 
-    # Create logs directory.
     try:
+        # If log file exists, run FTP upload
         os.listdir('logs')
         upload_new_logfiles()
     except OSError:
         try:
+            # Log directory doesn't exist. create it.
             os.mkdir('logs')
         except OSError:
             log.error("Can't create logs directory")

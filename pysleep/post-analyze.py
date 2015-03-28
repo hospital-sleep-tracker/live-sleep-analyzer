@@ -8,9 +8,7 @@ Use Case: Analyzing data from logfile (after-the-fact analysis)
   - after-the-fact analysis
 """
 import argparse
-import sys
-
-from pysleep.utils import InFile, log, check_correct_run_dir
+from pysleep.utils import SleepFile, log, check_correct_run_dir
 from pysleep.graphs import GraphWithAnalyzer
 
 
@@ -28,31 +26,32 @@ def main():
                         help='if provided, will print every entry where sum of last n entires > x to stdout')
 
     parser.add_argument('file',
-                        help='target sleepfile to perform analysis on')
-
+                        help='target sleepfile to perform analysis on',
+                        nargs='+')
     args = parser.parse_args()
 
     # Check user is in the right directory
     check_correct_run_dir()
 
-    graph_with_analyzer = GraphWithAnalyzer(min_movement_value=args.minimum_value,
-                                            min_movement_sum=args.minimum_sum)
-    sleep_reader = InFile(args.file)
+    for file in args.file:
+        log.info("Processing %s..." % file)
+        sleep_file = SleepFile(file)
+        graph_with_analyzer = GraphWithAnalyzer(min_movement_value=args.minimum_value,
+                                                min_movement_sum=args.minimum_sum,
+                                                session_id=file)
 
-    # Main program loop
-    while sleep_reader.is_ready:
-        try:
-            sleep_entry = sleep_reader.get_next_sleep_entry()
-            if sleep_entry:
-                graph_with_analyzer.add_entry(sleep_entry)
-        except KeyboardInterrupt:
-            log.info("Interrupt detected. Quitting")
-            sleep_reader.close()
-            sys.exit(0)
+        for sleep_entry in sleep_file.sleep_entries():
+            graph_with_analyzer.add_entry(sleep_entry)
+
+            # This call will flush the stdout, so if you are experimenting with
+            # outputting data to stdout during processing, comment this out as it may interfere
+            sleep_file.show_progress()
+        graph_with_analyzer.show()
 
     # Run post-load analysis
-    log.info("Loaded %d values" % graph_with_analyzer.num_values_recorded)
-    sleep_reader.close()
+    log.info("Processing complete. Showing results.")
+    raw_input('Press enter to quit...')
+
     graph_with_analyzer.show()
 
 

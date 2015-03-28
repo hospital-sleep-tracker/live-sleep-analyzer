@@ -4,6 +4,7 @@ Shared library of classes for sleep logging, analyzing, and graphing
 import sys
 import glob
 import os
+import math
 import csv
 import datetime
 import serial
@@ -90,12 +91,18 @@ class SleepEntry(object):
 
 
 class SleepEntryStore(object):
-    """
-    Simple class which stores all sleep-entries for a session.
+    """Stores all sleep-entries for a session.
     Subclasses can hook onto self.add_entry and self.show in order to display graphs and run analysis.
+
+    Usage:
+        storage = SleepEntryStore()
+        sleep_entry = SleepEntry(0,0)
+        storage.add_entry(sleep_entry)
     """
-    def __init__(self, **kwargs):
+    def __init__(self, session_id=None, **kwargs):
         self.sleep_entries = []
+
+        self.session_id = session_id
 
     def add_entry(self, sleep_entry):
         """
@@ -139,7 +146,7 @@ class SleepAnalyzer(SleepEntryStore):
     as well as post-session analysis.
     """
 
-    MOVEMENT_HISTORY_SIZE = 50
+    MOVEMENT_HISTORY_SIZE = 10000
     """Number of sleepentries to use for the short-term movement analysis. """
 
     def __init__(self, min_movement_sum=0, min_movement_value=0, **kwargs):
@@ -186,13 +193,16 @@ class SleepAnalyzer(SleepEntryStore):
 
         # Shift the new movement_value into the last_values
         self.last_entries.append(sleep_entry)
+        removed_entry = 0
         if len(self.last_entries) > self.MOVEMENT_HISTORY_SIZE:
-            self.last_entries.pop(0)
+            removed_entry = self.last_entries.pop(0).movement_value
 
         # Shift the new sum into last_movement_sums
-        self.last_movement_sums.append(sum([x.movement_value for x in self.last_entries]))
-        if len(self.last_movement_sums) > self.MOVEMENT_HISTORY_SIZE:
-            self.last_movement_sums.pop(0)
+        if self.last_movement_sums:
+            old_sum = self.last_movement_sums[-1:][0]
+        else:
+            old_sum = 0
+        self.last_movement_sums.append(old_sum + sleep_entry.movement_value - removed_entry)
 
         # Compare to max
         movement_value = sleep_entry.movement_value
@@ -205,13 +215,13 @@ class SleepAnalyzer(SleepEntryStore):
         else:
             self.occurrences_of[movement_value] += 1
 
-        x_values = [[x.index] for x in self.last_entries]
-        y_values = [[y.movement_value] for y in self.last_entries]
+        # x_values = [[x.index] for x in self.last_entries]
+        # y_values = [[y.movement_value] for y in self.last_entries]
         # movement_values = [[y.movement_value] for y in self.last_entries]
-        regr = linear_model.LinearRegression()
-        regr.fit(x_values, y_values)
-        self.movement_coefficients.append(regr.coef_[0][0])
-        self.last_movement_sum_coefficients.append(regr.coef_[0][0])
+        # regr = linear_model.LinearRegression()
+        # regr.fit(x_values, y_values)
+        # self.movement_coefficients.append(regr.coef_[0][0])
+        # self.last_movement_sum_coefficients.append(regr.coef_[0][0])
         if len(self.last_movement_sum_coefficients) > self.MOVEMENT_HISTORY_SIZE:
             self.last_movement_sum_coefficients.pop(0)
 
@@ -238,11 +248,11 @@ class SleepReader(object):
     def __init__(self, **kwargs):
         self.next_available_index = 0
 
-    def get_next_sleep_entry(self):
+    def sleep_entries(self):
         self.next_available_index += 1
+        return
 
-    @property
-    def is_ready(self):
+    def show_progress(self):
         pass
 
 
@@ -295,72 +305,90 @@ class Teensy(SleepReader):
             except (OSError, serial.SerialException):
                 pass
 
-    def get_next_sleep_entry(self):
+    def sleep_entries(self):
         """Gets new data from the provided teensy object (via readline)
         and converts it into an integer.
 
         :returns:
             Integer value representing movement as determined by teensy, or None
         """
-        super(Teensy, self).get_next_sleep_entry()
+        super(Teensy, self).sleep_entries()
 
-        raw_value = self.teensy.readline().strip()
-        assert raw_value is not '', "Teensy returned empty string"
-        movement_value = int(raw_value)
+        for line in self.teensy:
+            raw_value = line.strip()
+            assert raw_value is not '', "Teensy returned empty string"
+            movement_value = int(raw_value)
 
-        log.info("Read movement value: %d" % movement_value)
-        return SleepEntry(self.next_available_index, movement_value)
-
-    @property
-    def is_ready(self):
-        return self.teensy.isOpen()
+            log.info("Read movement value: %d" % movement_value)
+            yield SleepEntry(self.next_available_index, movement_value)
 
 
-class InFile(SleepReader):
+class SleepFile(SleepReader):
+    """Wrapper for a python file object, providing a simple interface to read sleep data from the file.
+
+     Usage:
+        The constructor is passed in a filename. After instantiation is complete, calls to get_next_sleep_entry will
+        read in a new line from the file, and construct and return a SleepEntry from the data."""
+
     def __init__(self, filename, **kwargs):
-        """
-        Opens the specified file, and reads the header line
-        """
-        super(InFile, self).__init__(**kwargs)
+        """Opens the specified file, and reads the header line"""
+        super(SleepFile, self).__init__(**kwargs)
+
         self.last_sleep_entry = None
-        self._done = False
+        """Used mostly for debugging malformed csv files. Constantly updated with the last SleepEntry
+        that was successfully read in."""
+
         try:
             self._file = open(filename, 'r')
+            self.total_size = os.path.getsize(filename)
             header = self._file.readline().strip()
+            self.total_read = len(header)
             log.info("CSV Headers: %s" % header)
         except Exception as e:
             log.error("Couldn't open input file: %s" % e)
             sys.exit(1)
 
-    def get_next_sleep_entry(self):
-        line = self._file.readline()
+    def sleep_entries(self):
+        """Probably one of the most complicated functions in this whole program. This function yields a new SleepEntry
+         every time it is iterated over. WHAT? Yeah, that's what it does. It basically makes it so that you can
+         use this function as a foreach to read the data, and it will stop returning SleepEntrys when there
+         are none left in the file, without having to worry about counters and such..
 
-        if line == '':
-            # End of file reached
-            self._done = True
-        else:
-            values = line.strip().split(",")
-            assert len(values) == len(SleepEntry.header_names()), \
-                "Malformed sleepfile: %s    Last correct line: %s" % (values, self.last_sleep_entry)
+         Example:
+            sleep_file = InFile('sample_file.log')
+            for sleep_entry in sleep_file.sleep_entries:
+                print sleep_entry
+        """
+        for line in self._file:
+            self.total_read += len(line)
+            if line == '':
+                # End of file reached
+                self._file.close()
+                raise StopIteration
+            else:
+                values = line.strip().split(",")
+                assert len(values) == len(SleepEntry.header_names()), \
+                    "Malformed sleepfile: %s    Last correct line: %s" % (values, self.last_sleep_entry)
 
-            try:
-                # Convert numbers to integers, and dates/timeis
-                date = values[1]
-                time = values[2]
-                index = int(values[0])
-                movement_value = int(values[3])
+                try:
+                    # Convert numbers to integers, and dates/timeis
+                    date = values[1]
+                    time = values[2]
+                    index = int(values[0])
+                    movement_value = int(values[3])
 
-                self.last_sleep_entry = SleepEntry(index, movement_value, date, time)
-                return self.last_sleep_entry
-            except ValueError:
-                log.error("Malformed sleepfile: %s    Last correct line: %s" % (values, self.last_sleep_entry))
+                    self.last_sleep_entry = SleepEntry(index, movement_value, date, time)
 
-    @property
-    def is_ready(self):
-        return not self._done
+                    # Yield the results. Why yield? Well, yielding means that the next time this funciton is called,
+                    # it will continue where it left off, here at the yield statement.
+                    yield self.last_sleep_entry
+                except ValueError:
+                    log.error("Malformed sleepfile: %s    Last correct line: %s" % (values, self.last_sleep_entry))
 
-    def close(self):
-        self._file.close()
+    def show_progress(self):
+        percentage = math.floor((float(self.total_read) / float(self.total_size)) * 100.0)
+        sys.stdout.flush()
+        sys.stdout.write("\r%d%%" % percentage)
 
 
 class OutFile(object):
@@ -391,8 +419,8 @@ class LightSwitch(object):
     """Static object for turning off and on the Raspberry Pi's indicator LED.
 
     Usage:
-    LightSwitch.turn_on()
-    LightSwitch.turn_off()
+        LightSwitch.turn_on()
+        LightSwitch.turn_off()
     """
     @staticmethod
     def turn_on():

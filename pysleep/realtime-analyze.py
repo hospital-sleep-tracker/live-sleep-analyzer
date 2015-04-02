@@ -37,14 +37,12 @@ def main():
             sleep_entry_store.add_entry(sleep_entry)
 
     except KeyboardInterrupt:
-        log.info("Interrupt detected. Closing logfile")
-        sleep_entry_store.show()
-        log.info("Press enter to quit...")
+        log.info("Interrupt detected. Press enter to quit...")
         raw_input()
-        sys.exit(0)
     except serial.SerialException:
-        log.info("USB Error. Closing everything")
+        log.info("USB Error. Closing current session")
     finally:
+        # sleep_entry_store.show()
         logfile.close()
 
 

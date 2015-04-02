@@ -11,9 +11,7 @@ import argparse
 import sys
 import serial
 import os
-import pdb
-pdb.set_trace()
-from pysleep.utils import check_correct_run_dir, log, upload_new_logfiles, \
+from pysleep.utils import check_correct_run_dir, log, \
     LightSwitch, Teensy, OutFile
 
 
@@ -29,7 +27,7 @@ def main():
     try:
         # If log file exists, run FTP upload
         os.listdir('logs')
-        upload_new_logfiles()
+        # upload_new_logfiles()
     except OSError:
         try:
             # Log directory doesn't exist. create it.
@@ -48,9 +46,7 @@ def main():
             sleep_log = OutFile()
             LightSwitch.turn_on()
 
-            while sleep_reader.is_ready():
-                # Read value from accelerometer
-                sleep_entry = sleep_reader.get_next_sleep_entry()
+            for sleep_entry in sleep_reader.sleep_entries():
 
                 # Handle case where bad value is received from reader
                 if sleep_entry is None:

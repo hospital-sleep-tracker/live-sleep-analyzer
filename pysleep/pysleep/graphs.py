@@ -11,12 +11,13 @@ class PostSessionGraphs(SleepAnalyzer):
         super(PostSessionGraphs, self).show()
         pyplot.figure("PostSessionGraphs %s" % self.session_id)
         pyplot.clf()
-        nrows = 3
+        nrows = 0
         ncols = 1
 
         # Graph 1
         if self.big_movement_entries:
-            pyplot.subplot(nrows, ncols, 1)
+            nrows += 1
+            pyplot.subplot(nrows, ncols, nrows)
             x_values = [sleep_entry.index for sleep_entry in self.big_movement_entries]
             y_values = [sleep_entry.movement_value for sleep_entry in self.big_movement_entries]
             pyplot.xlim(xmin=0, xmax=max(x_values))
@@ -24,21 +25,45 @@ class PostSessionGraphs(SleepAnalyzer):
             pyplot.plot(x_values, y_values, 'ro')
 
         # Graph 2
-        # pyplot.subplot(nrows, ncols, 2)
-        # x_values2 = range(0, len(self.movement_coefficients))
-        # y_values2 = self.movement_coefficients
-        # pyplot.xlim(xmin=0, xmax=len(self.movement_coefficients))
-        # pyplot.ylim(ymin=0, ymax=max(self.movement_coefficients))
-        # pyplot.plot(x_values2, y_values2, 'ro')
+        if self.movement_coefficients:
+            nrows += 1
+            pyplot.subplot(nrows, ncols, nrows)
+            x_values2 = range(0, len(self.movement_coefficients))
+            y_values2 = self.movement_coefficients
+            pyplot.xlim(xmin=0, xmax=len(self.movement_coefficients))
+            pyplot.ylim(ymin=0, ymax=max(self.movement_coefficients))
+            pyplot.plot(x_values2, y_values2, 'ro')
 
         # Graph 3
-        pyplot.subplot(nrows, ncols, 3)
-        y_values3 = self.last_movement_sums
-        x_values3 = range(0, len(self.last_movement_sums))
-        pyplot.xlim(xmin=0, xmax=len(self.last_movement_sums))
-        pyplot.ylim(ymin=0, ymax=max(self.last_movement_sums))
-        pyplot.plot(x_values3, y_values3, 'ro')
+        if self.movement_sums:
+            nrows += 1
+            pyplot.subplot(nrows, ncols, nrows)
+            y_values3 = self.movement_sums
+            x_values3 = range(0, len(self.movement_sums))
+            pyplot.xlim(xmin=0, xmax=len(self.movement_sums))
+            pyplot.ylim(ymin=0, ymax=max(self.movement_sums))
+            pyplot.plot(x_values3, y_values3, 'ro')
+
+        if self.deteriorating_movement_sums:
+            nrows += 1
+            pyplot.subplot(nrows, ncols, nrows)
+            y_values4 = self.deteriorating_movement_sums
+            x_values4 = range(0, len(self.deteriorating_movement_sums))
+            # pyplot.xlim(xmin=0, xmax=len(self.deteriorating_movement_sums))
+            # pyplot.ylim(ymin=0, ymax=max(self.deteriorating_movement_sums))
+            pyplot.plot(x_values4, y_values4, 'ro')
+
+        if self.deteriorating_movement_sum_coefficients:
+            nrows += 1
+            pyplot.subplot(nrows, ncols, nrows)
+            y_values5 = self.deteriorating_movement_sum_coefficients
+            x_values5 = range(0, len(self.deteriorating_movement_sum_coefficients))
+            # pyplot.xlim(xmin=0, xmax=len(self.deteriorating_movement_sums))
+            # pyplot.ylim(ymin=0, ymax=max(self.deteriorating_movement_sums))
+            pyplot.plot(x_values5, y_values5, 'ro')
+
         pyplot.draw()
+        pyplot.show()
 
 
 class LiveSessionGraphs(SleepAnalyzer):
@@ -50,11 +75,11 @@ class LiveSessionGraphs(SleepAnalyzer):
         super(LiveSessionGraphs, self).add_entry(sleep_entry)
         pyplot.figure("LiveSessionGraphs %s" % self.session_id)
         pyplot.clf()
-        nrows = 2
+        nrows = 1
         ncols = 1
 
         # Graph 1
-        subplot = pyplot.subplot(nrows, ncols, 1)
+        subplot = pyplot.subplot(nrows, ncols, nrows)
         subplot.set_title('Raw Movement Values')
         x_values = [x.index for x in self.last_entries]
         y_values = [x.movement_value for x in self.last_entries]
@@ -62,7 +87,8 @@ class LiveSessionGraphs(SleepAnalyzer):
 
         # Graph 2
         if self.movement_coefficients:
-            subplot = pyplot.subplot(nrows, ncols, 2)
+            nrows += 1
+            subplot = pyplot.subplot(nrows, ncols, nrows)
             subplot.set_title('Movement Coefficients')
             x_values2 = [[x] for x in range(0, len(self.movement_coefficients))]
             y_values2 = [[y] for y in self.movement_coefficients]

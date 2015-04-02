@@ -146,7 +146,7 @@ class SleepAnalyzer(SleepEntryStore):
     as well as post-session analysis.
     """
 
-    MOVEMENT_HISTORY_SIZE = 10000
+    MOVEMENT_HISTORY_SIZE = 1000
     """Number of sleepentries to use for the short-term movement analysis. """
 
     def __init__(self, min_movement_sum=0, min_movement_value=0, **kwargs):
@@ -169,16 +169,13 @@ class SleepAnalyzer(SleepEntryStore):
 
         self.movement_coefficients = []
 
-        self.last_entries = []
-        """Last X movements. Useful for analysis that needs to look at movement over the last few readings.
-        Technically you could draw this from the last X entries of self.sleep_entries, but its simpler to keep it up
-        to date here."""
-
         self.big_movement_entries = []
 
-        self.last_movement_sums = []
+        self.movement_sums = []
 
-        self.last_movement_sum_coefficients = []
+        self.deteriorating_movement_sums = [0, 0]
+
+        self.deteriorating_movement_sum_coefficients = [0, 0]
 
     def add_entry(self, sleep_entry):
         """This function is run immediately after the entry has been stored in the SleepEntryStore (parent.__init__).
@@ -191,18 +188,21 @@ class SleepAnalyzer(SleepEntryStore):
         if sleep_entry.movement_value > self.min_movement_value:
             self.big_movement_entries.append(sleep_entry)
 
-        # Shift the new movement_value into the last_values
-        self.last_entries.append(sleep_entry)
-        removed_entry = 0
-        if len(self.last_entries) > self.MOVEMENT_HISTORY_SIZE:
-            removed_entry = self.last_entries.pop(0).movement_value
+        # Add the movement_sum
+        num_entries = self.MOVEMENT_HISTORY_SIZE * -1
+        movement_sum = sum([x.movement_value for x in self.sleep_entries[num_entries:]])
+        self.movement_sums.append(movement_sum)
 
-        # Shift the new sum into last_movement_sums
-        if self.last_movement_sums:
-            old_sum = self.last_movement_sums[-1:][0]
-        else:
-            old_sum = 0
-        self.last_movement_sums.append(old_sum + sleep_entry.movement_value - removed_entry)
+
+        self.deteriorating_movement_sums.append(self.deteriorating_movement_sums[-1] + sleep_entry.movement_value - 1)
+        if self.deteriorating_movement_sums[-1] < 0:
+            self.deteriorating_movement_sums[-1] = 0
+
+        y_values = [[y] for y in self.deteriorating_movement_sums[-50:]]
+        x_values = [[x] for x in range(0, len(y_values))]
+        regr = linear_model.LinearRegression()
+        regr.fit(x_values, y_values)
+        self.deteriorating_movement_sum_coefficients.append(regr.coef_[0][0])
 
         # Compare to max
         movement_value = sleep_entry.movement_value
@@ -215,15 +215,14 @@ class SleepAnalyzer(SleepEntryStore):
         else:
             self.occurrences_of[movement_value] += 1
 
+
+
         # x_values = [[x.index] for x in self.last_entries]
         # y_values = [[y.movement_value] for y in self.last_entries]
         # movement_values = [[y.movement_value] for y in self.last_entries]
         # regr = linear_model.LinearRegression()
         # regr.fit(x_values, y_values)
         # self.movement_coefficients.append(regr.coef_[0][0])
-        # self.last_movement_sum_coefficients.append(regr.coef_[0][0])
-        if len(self.last_movement_sum_coefficients) > self.MOVEMENT_HISTORY_SIZE:
-            self.last_movement_sum_coefficients.pop(0)
 
         # if sum([x.movement_value for x in self.last_entries]) > self.min_movement_sum:
         #     print "Analyzed: %s    History Sum: %d" % (sleep_entry, sum(self.last_entries))
@@ -239,6 +238,16 @@ class SleepAnalyzer(SleepEntryStore):
                  ([k for k in self.occurrences_of if self.occurrences_of[k] == most_occurrences], most_occurrences))
         log.info("Mean: %d" % numpy.mean([sleep_entry.movement_value for sleep_entry in self.sleep_entries]))
 
+    @property
+    def last_entries(self):
+        """Last X movements. Useful for analysis that needs to look at movement over the last few readings.
+        Technically you could draw this from the last X entries of self.sleep_entries, but its simpler to keep it up
+        to date here."""
+        return self.sleep_entries[(self.MOVEMENT_HISTORY_SIZE * -1):]
+
+    @property
+    def last_movement_sum_coefficients(self):
+        return self.movement_coefficients[(self.MOVEMENT_HISTORY_SIZE * -1):]
 
 class SleepReader(object):
     """

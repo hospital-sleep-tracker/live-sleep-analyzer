@@ -50,9 +50,9 @@ def main():
 
     # Run post-load analysis
     log.info("Processing complete. Showing results.")
-    raw_input('Press enter to quit...')
+    # graph_with_analyzer.show()
 
-    graph_with_analyzer.show()
+    # raw_input('Press `...')
 
 
 if __name__ == "__main__":

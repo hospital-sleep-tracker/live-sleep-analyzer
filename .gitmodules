@@ -1,3 +1,6 @@
 [submodule "sample_logs"]
 	path = sample_logs
 	url = git@github.com:hospital-sleep-tracker/sample_logs.git
+[submodule "arduino"]
+	path = arduino
+	url = git@github.com:hospital-sleep-tracker/arduino.git

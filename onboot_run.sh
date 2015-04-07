@@ -7,7 +7,7 @@ echo none >/sys/class/leds/led0/trigger
 
 if ping -c 1 archive.raspberrypi.org &> /dev/null; then
   apt-get update
-  apt-get upgrade -y --force-yes
+#  apt-get upgrade -y --force-yes
   apt-get install -y screen python-usb python-serial python-matplotlib python-sklearn vsftpd
 fi
 
